@@ -1,6 +1,7 @@
 package com.halcyon.travelagent.caching;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -13,27 +14,29 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class CacheManager {
     private final RedisTemplate<Long, ChatStatus> redisTemplate;
-    private final ObjectMapper objectMapper;
 
-    public void saveChatStatus(long userId, ChatStatus chatStatus) {
-        redisTemplate.opsForValue().set(userId, chatStatus);
-        log.info("Cached chat status {} for user with id: {}", chatStatus.getType(), userId);
+    public void saveChatStatus(long chatId, ChatStatus chatStatus) {
+        redisTemplate.opsForValue().set(chatId, chatStatus);
+        log.info("Cached status {} for chat with id: {}", chatStatus.getType(), chatId);
     }
 
-    public void deleteChatStatus(long userId) {
-        redisTemplate.delete(userId);
+    public void removeChatStatus(long chatId) {
+        redisTemplate.delete(chatId);
     }
 
-    public Optional<ChatStatus> getChatStatus(long userId) {
-        Optional<com.halcyon.travelagent.caching.ChatStatus> chatStatusValue = Optional.ofNullable(redisTemplate.opsForValue().get(userId));
+    public Optional<ChatStatus> getChatStatus(long chatId) {
+        Optional<com.halcyon.travelagent.caching.ChatStatus> chatStatusValue = Optional.ofNullable(redisTemplate.opsForValue().get(chatId));
 
         if (chatStatusValue.isEmpty()) {
-            log.info("No cached chat status found for user with id: {}", userId);
+            log.info("No cached status found for chat with id: {}", chatId);
             return Optional.empty();
         }
 
+        var objectMapper = new ObjectMapper();
+        objectMapper.registerModule(new JavaTimeModule());
+
         ChatStatus chatStatus = objectMapper.convertValue(chatStatusValue.get(), ChatStatus.class);
-        log.info("Fetched cached chat status {} for user with id: {}", chatStatus.getType(), userId);
+        log.info("Fetched cached status {} for chat with id: {}", chatStatus.getType(), chatId);
 
         return Optional.of(chatStatus);
     }

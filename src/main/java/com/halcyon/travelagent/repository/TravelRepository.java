@@ -8,5 +8,5 @@ import java.util.List;
 
 @Repository
 public interface TravelRepository extends JpaRepository<Travel, Long> {
-    List<Travel> findAllByCreatorId(long creatorId);
+    List<Travel> findAllByCreatorIdOrderByCreatedAt(long creatorId);
 }

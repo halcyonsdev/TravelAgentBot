@@ -1,21 +1,25 @@
 package com.halcyon.travelagent.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.Instant;
 
 @Entity
 @Table(name = "travels")
+@Builder
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 public class Travel {
+    public Travel(String name, String description, Long creatorId) {
+        this.name = name;
+        this.description = description;
+        this.creatorId = creatorId;
+    }
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")

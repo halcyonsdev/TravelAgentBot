@@ -13,18 +13,15 @@ public class KeyboardUtils {
 
     public static InlineKeyboardMarkup generateStartInlineKeyboard() {
         return InlineKeyboardMarkup.builder()
-                .keyboardRow(
-                        new InlineKeyboardRow(
-                                List.of(
-                                        InlineKeyboardButton.builder()
-                                                .text("✈️ Мои путешествия")
-                                                .callbackData("get_travels")
-                                                .build(),
-                                        InlineKeyboardButton.builder()
-                                                .text("\uD83D\uDD28 Создать путешествие")
-                                                .callbackData("create_travel")
-                                                .build()
-                                )
+                .keyboard(List.of(
+                        new InlineKeyboardRow(InlineKeyboardButton.builder()
+                                .text("✈️ Мои путешествия")
+                                .callbackData("get_travels")
+                                .build()),
+                        new InlineKeyboardRow(InlineKeyboardButton.builder()
+                                .text("\uD83D\uDD28 Создать путешествие")
+                                .callbackData("create_travel")
+                                .build())
                         )).build();
     }
 
@@ -34,9 +31,10 @@ public class KeyboardUtils {
         List<InlineKeyboardRow> keyboard = new ArrayList<>();
         InlineKeyboardRow row = new InlineKeyboardRow();
 
+        int counter = 1;
         for (Travel travel: travels) {
             var travelButton = InlineKeyboardButton.builder()
-                    .text(travel.getName())
+                    .text(travel.getName().isEmpty() ? "Новое путешествие " + counter++ : travel.getName())
                     .callbackData("info_travel_" + travel.getId())
                     .build();
 

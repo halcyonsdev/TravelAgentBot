@@ -5,11 +5,12 @@ import org.springframework.stereotype.Controller;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
 import org.telegram.telegrambots.meta.api.objects.Update;
+import org.telegram.telegrambots.meta.api.objects.message.Message;
 
 import static com.halcyon.travelagent.util.KeyboardUtils.generateStartInlineKeyboard;
 
 @Controller
-public class HelpController {
+public class CommandController {
     private static final String START_MESSAGE = """
                         ***🌍 Привет! Я — твой персональный туристический помощник***.
                         
@@ -19,7 +20,7 @@ public class HelpController {
                         """;
 
     public void handleStartCommand(TravelAgentBot bot, long chatId) {
-        SendMessage startMessage = SendMessage.builder()
+        var startMessage = SendMessage.builder()
                 .chatId(chatId)
                 .text(START_MESSAGE)
                 .replyMarkup(generateStartInlineKeyboard())
@@ -39,5 +40,16 @@ public class HelpController {
         startMessage.enableMarkdown(true);
 
         bot.editMessage(startMessage);
+    }
+
+    public void handleUnknownCommand(TravelAgentBot bot, Message message) {
+        var unknownCommandMessage = SendMessage.builder()
+                .chatId(message.getChatId())
+                .text("***Неизвестная команда.***")
+                .replyToMessageId(message.getMessageId())
+                .build();
+        unknownCommandMessage.enableMarkdown(true);
+
+        bot.sendMessage(unknownCommandMessage);
     }
 }
