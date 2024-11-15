@@ -17,7 +17,7 @@ public class BotInitializer implements CommandLineRunner {
     public void run(String... args) {
         try (TelegramBotsLongPollingApplication botsApplication = new TelegramBotsLongPollingApplication()) {
             botsApplication.registerBot(Credentials.getBotToken(), travelAgentBot);
-            log.info("Telegram bot successfully started.");
+            log.info("TravelAgentBot successfully started.");
             Thread.currentThread().join();
         } catch (Exception e) {
             log.error("An error occurred while registering the bot.");

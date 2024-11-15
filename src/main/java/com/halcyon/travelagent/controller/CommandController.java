@@ -4,7 +4,7 @@ import com.halcyon.travelagent.TravelAgentBot;
 import org.springframework.stereotype.Controller;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
-import org.telegram.telegrambots.meta.api.objects.Update;
+import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
 import org.telegram.telegrambots.meta.api.objects.message.Message;
 
 import static com.halcyon.travelagent.util.KeyboardUtils.generateStartInlineKeyboard;
@@ -30,10 +30,10 @@ public class CommandController {
         bot.sendMessage(startMessage);
     }
 
-    public void handleBackCommand(TravelAgentBot bot, Update update) {
+    public void handleBackCommand(TravelAgentBot bot, CallbackQuery callbackQuery) {
         var startMessage = EditMessageText.builder()
-                .chatId(update.getCallbackQuery().getMessage().getChatId())
-                .messageId(update.getCallbackQuery().getMessage().getMessageId())
+                .chatId(callbackQuery.getMessage().getChatId())
+                .messageId(callbackQuery.getMessage().getMessageId())
                 .text(START_MESSAGE)
                 .replyMarkup(generateStartInlineKeyboard())
                 .build();

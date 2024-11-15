@@ -25,32 +25,56 @@ public class TravelService {
     public void create(CallbackQuery callbackQuery) {
         Travel travel = Travel.builder()
                 .name("")
-                .description("Название отсутствует")
+                .description("Описание отсутствует")
                 .creatorId(callbackQuery.getFrom().getId())
                 .build();
 
         travel = travelRepository.save(travel);
 
+        saveStatus(travel.getId(), ChatStatusType.TRAVEL_NAME, callbackQuery);
+    }
+
+    public void saveStatus(long travelId, ChatStatusType type, CallbackQuery callbackQuery) {
         cacheManager.saveChatStatus(
                 callbackQuery.getMessage().getChatId(),
                 ChatStatus.builder()
-                        .type(ChatStatusType.TRAVEL_NAME)
+                        .type(type)
                         .messageId(callbackQuery.getMessage().getMessageId())
-                        .data(String.valueOf(travel.getId()))
+                        .data(String.valueOf(travelId))
                         .build()
         );
     }
 
-    public void changeName(long travelId, String name, long chatId) {
-        Travel travel = findById(travelId);
-        travel.setName(name);
-
-        travelRepository.save(travel);
+    public void changeNameAndRemoveStatus(long travelId, String newName, long chatId) {
+        changeName(travelId, newName);
         cacheManager.removeChatStatus(chatId);
     }
 
-    private Travel findById(long travelId) {
+    public void changeName(long travelId, String newName) {
+        Travel travel = findById(travelId);
+        travel.setName(newName);
+
+        travelRepository.save(travel);
+    }
+
+    public Travel findById(long travelId) {
         return travelRepository.findById(travelId)
                 .orElseThrow(() -> new TravelNotFoundException("Travel with this id not found."));
+    }
+
+    public void changeDescriptionAndRemoveStatus(long travelId, String newDescription, long chatId) {
+        changeDescription(travelId, newDescription);
+        cacheManager.removeChatStatus(chatId);
+    }
+
+    public void changeDescription(long travelId, String newDescription) {
+        Travel travel = findById(travelId);
+        travel.setDescription(newDescription);
+
+        travelRepository.save(travel);
+    }
+
+    public void deleteTravel(long travelId) {
+        travelRepository.deleteById(travelId);
     }
 }

@@ -33,9 +33,12 @@ public class KeyboardUtils {
 
         int counter = 1;
         for (Travel travel: travels) {
+            boolean isEmptyTravelName = travel.getName().isEmpty();
+            String data = "info_travel_" + travel.getId();
+
             var travelButton = InlineKeyboardButton.builder()
-                    .text(travel.getName().isEmpty() ? "Новое путешествие " + counter++ : travel.getName())
-                    .callbackData("info_travel_" + travel.getId())
+                    .callbackData(isEmptyTravelName ? data + "_number_" + counter : data)
+                    .text(isEmptyTravelName ? "Новое путешествие " + counter++ : travel.getName())
                     .build();
 
             row.add(travelButton);
@@ -61,5 +64,35 @@ public class KeyboardUtils {
                 .text("⬅️ Назад")
                 .callbackData("back")
                 .build();
+    }
+
+    public static InlineKeyboardMarkup generateTravelInfoKeyboardMarkup(long travelId, int number) {
+        return InlineKeyboardMarkup.builder()
+                .keyboard(List.of(
+                        new InlineKeyboardRow(InlineKeyboardButton.builder()
+                                .text("\uD83D\uDCDD Изменить")
+                                .callbackData(String.format("change_travel_%s%s", travelId, (number == -1 ? "" : "_number_" + number)))
+                                .build()),
+                        new InlineKeyboardRow(getBackButton())
+                )).build();
+    }
+
+    public static InlineKeyboardMarkup generateChangeTravelKeyboardMarkup(long travelId) {
+        return InlineKeyboardMarkup.builder()
+                .keyboard(List.of(
+                        new InlineKeyboardRow(InlineKeyboardButton.builder()
+                                .text("✏️ Изменить название")
+                                .callbackData("change_travel_name_" + travelId)
+                                .build()),
+                        new InlineKeyboardRow(InlineKeyboardButton.builder()
+                                .text("\uD83D\uDCDD Изменить описание")
+                                .callbackData("change_travel_description_" + travelId)
+                                .build()),
+                        new InlineKeyboardRow(InlineKeyboardButton.builder()
+                                .text("\uD83D\uDDD1️ Удалить")
+                                .callbackData("delete_travel_" + travelId)
+                                .build()),
+                        new InlineKeyboardRow(getBackButton())
+                )).build();
     }
 }

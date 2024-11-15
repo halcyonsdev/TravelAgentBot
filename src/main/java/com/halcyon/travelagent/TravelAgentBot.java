@@ -12,6 +12,7 @@ import org.telegram.telegrambots.client.okhttp.OkHttpTelegramClient;
 import org.telegram.telegrambots.longpolling.util.LongPollingSingleThreadUpdateConsumer;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
+import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.message.Message;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
@@ -34,23 +35,36 @@ public class TravelAgentBot implements LongPollingSingleThreadUpdateConsumer {
         if (update.hasMessage() && update.getMessage().hasText()) {
             Message message = update.getMessage();
 
-            switch (message.getText()) {
-                case "/start" -> commandController.handleStartCommand(this, message.getChatId());
-
-                default -> {
-                    if (message.getText().charAt(0) == '/') {
-                        commandController.handleUnknownCommand(this, message);
-                    } else {
-                        processStatus(message);
-                    }
-                }
+            if (message.getText().equals("/start")) {
+                commandController.handleStartCommand(this, message.getChatId());
+            } else if (message.getText().charAt(0) == '/') {
+                    commandController.handleUnknownCommand(this, message);
+            } else {
+                processStatus(message);
             }
         } else if (update.hasCallbackQuery()) {
-            switch (update.getCallbackQuery().getData()) {
-                case "get_travels" -> travelController.getTravels(this, update);
-                case "create_travel" -> travelController.createTravel(this, update);
+            CallbackQuery callbackQuery = update.getCallbackQuery();
+            String data = callbackQuery.getData();
 
-                case "back" -> commandController.handleBackCommand(this, update);
+            switch (data) {
+                case "get_travels" -> travelController.getTravels(this, callbackQuery);
+                case "create_travel" -> travelController.createTravel(this, callbackQuery);
+
+                case "back" -> commandController.handleBackCommand(this, callbackQuery);
+
+                default -> {
+                    if (data.startsWith("info_travel_")) {
+                        travelController.getTravel(this, callbackQuery);
+                    } else if (data.startsWith("change_travel_name_")) {
+                        travelController.enterNewTravelName(this, callbackQuery);
+                    } else if (data.startsWith("change_travel_description_")) {
+                        travelController.enterNewTravelDescription(this, callbackQuery);
+                    } else if (data.startsWith("change_travel_")) {
+                        travelController.changeTravel(this, callbackQuery);
+                    } else if (data.startsWith("delete_travel_")) {
+                        travelController.deleteTravel(this, callbackQuery);
+                    }
+                }
             }
         }
     }
@@ -66,6 +80,7 @@ public class TravelAgentBot implements LongPollingSingleThreadUpdateConsumer {
 
         switch (chatStatus.getType()) {
             case TRAVEL_NAME -> travelController.changeTravelName(this, message, Long.parseLong(chatStatus.getData()));
+            case TRAVEL_DESCRIPTION -> travelController.changeTravelDescription(this, message, Long.parseLong(chatStatus.getData()));
         }
     }
 
