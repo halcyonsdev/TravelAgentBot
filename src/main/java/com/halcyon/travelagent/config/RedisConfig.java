@@ -1,6 +1,5 @@
 package com.halcyon.travelagent.config;
 
-import com.halcyon.travelagent.caching.ChatStatus;
 import org.springframework.boot.autoconfigure.data.redis.RedisProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -20,10 +19,10 @@ public class RedisConfig {
     }
 
     @Bean
-    public RedisTemplate<Long, ChatStatus> redisTemplate(RedisConnectionFactory redisConnectionFactory) {
-        RedisTemplate<Long, ChatStatus> redisTemplate = new RedisTemplate<>();
+    public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory redisConnectionFactory) {
+        RedisTemplate<String, Object> redisTemplate = new RedisTemplate<>();
         redisTemplate.setConnectionFactory(redisConnectionFactory);
-        redisTemplate.setDefaultSerializer(new Jackson2JsonRedisSerializer<>(ChatStatus.class));
+        redisTemplate.setDefaultSerializer(new Jackson2JsonRedisSerializer<>(Object.class));
         return redisTemplate;
     }
 }

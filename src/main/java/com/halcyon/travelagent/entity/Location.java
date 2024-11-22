@@ -2,20 +2,18 @@ package com.halcyon.travelagent.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.Cascade;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.Instant;
-import java.util.List;
 
 @Entity
-@Table(name = "travels")
+@Table(name = "locations")
 @Builder
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class Travel {
+public class Location {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")
@@ -28,13 +26,16 @@ public class Travel {
     @Column(name = "name")
     private String name;
 
-    @Column(name = "description")
-    private String description;
+    @Column(name = "street")
+    private String street;
 
-    @Column(name = "creator_id")
-    private Long creatorId;
+    @Column(name = "start_time")
+    private Instant startTime;
 
-    @OneToMany(mappedBy = "travel")
-    @Cascade(org.hibernate.annotations.CascadeType.ALL)
-    private List<Location> locations;
+    @Column(name = "end_time")
+    private Instant endTime;
+
+    @ManyToOne
+    @JoinColumn(name = "travel_id", referencedColumnName = "id")
+    private Travel travel;
 }

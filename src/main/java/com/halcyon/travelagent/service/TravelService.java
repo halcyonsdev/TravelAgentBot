@@ -1,6 +1,5 @@
 package com.halcyon.travelagent.service;
 
-import com.halcyon.travelagent.caching.CacheManager;
 import com.halcyon.travelagent.caching.ChatStatus;
 import com.halcyon.travelagent.caching.ChatStatusType;
 import com.halcyon.travelagent.entity.Travel;
@@ -16,38 +15,19 @@ import java.util.List;
 @RequiredArgsConstructor
 public class TravelService {
     private final TravelRepository travelRepository;
-    private final CacheManager cacheManager;
 
     public List<Travel> getUserTravels(long userId) {
         return travelRepository.findAllByCreatorIdOrderByCreatedAt(userId);
     }
 
-    public void create(CallbackQuery callbackQuery) {
+    public Travel createTravel(CallbackQuery callbackQuery) {
         Travel travel = Travel.builder()
                 .name("")
-                .description("Описание отсутствует")
+                .description("отсутствует")
                 .creatorId(callbackQuery.getFrom().getId())
                 .build();
 
-        travel = travelRepository.save(travel);
-
-        saveStatus(travel.getId(), ChatStatusType.TRAVEL_NAME, callbackQuery);
-    }
-
-    public void saveStatus(long travelId, ChatStatusType type, CallbackQuery callbackQuery) {
-        cacheManager.saveChatStatus(
-                callbackQuery.getMessage().getChatId(),
-                ChatStatus.builder()
-                        .type(type)
-                        .messageId(callbackQuery.getMessage().getMessageId())
-                        .data(String.valueOf(travelId))
-                        .build()
-        );
-    }
-
-    public void changeNameAndRemoveStatus(long travelId, String newName, long chatId) {
-        changeName(travelId, newName);
-        cacheManager.removeChatStatus(chatId);
+        return travelRepository.save(travel);
     }
 
     public void changeName(long travelId, String newName) {
@@ -60,11 +40,6 @@ public class TravelService {
     public Travel findById(long travelId) {
         return travelRepository.findById(travelId)
                 .orElseThrow(() -> new TravelNotFoundException("Travel with this id not found."));
-    }
-
-    public void changeDescriptionAndRemoveStatus(long travelId, String newDescription, long chatId) {
-        changeDescription(travelId, newDescription);
-        cacheManager.removeChatStatus(chatId);
     }
 
     public void changeDescription(long travelId, String newDescription) {

@@ -1,6 +1,6 @@
 -- =========================================
 -- Description: Create the travels table
--- Author: Halcyon
+-- Author: Ruslan Sadikov
 -- Version: v1
 -- =========================================
 

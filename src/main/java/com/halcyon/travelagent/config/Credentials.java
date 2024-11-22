@@ -11,11 +11,7 @@ public class Credentials {
         return dotenv.get("TELEGRAM_BOT_TOKEN");
     }
 
-    public static String getBotUsername() {
-        return dotenv.get("TELEGRAM_BOT_USERNAME");
-    }
-
-    public static Long getCreatorId() {
-        return Long.parseLong(dotenv.get("CREATOR_ID"));
+    public static String getGeoapifyApiKey() {
+        return dotenv.get("GEOAPIFY_API_KEY");
     }
 }

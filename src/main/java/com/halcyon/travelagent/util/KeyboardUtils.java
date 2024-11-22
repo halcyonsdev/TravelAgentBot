@@ -29,7 +29,7 @@ public class KeyboardUtils {
         int numberOfButtonsInRow = 3;
 
         List<InlineKeyboardRow> keyboard = new ArrayList<>();
-        InlineKeyboardRow row = new InlineKeyboardRow();
+        InlineKeyboardRow currentRow = new InlineKeyboardRow();
 
         int counter = 1;
         for (Travel travel: travels) {
@@ -41,17 +41,17 @@ public class KeyboardUtils {
                     .text(isEmptyTravelName ? "Новое путешествие " + counter++ : travel.getName())
                     .build();
 
-            row.add(travelButton);
+            currentRow.add(travelButton);
 
-            if (row.size() == numberOfButtonsInRow) {
-                keyboard.add(row);
-                row = new InlineKeyboardRow();
+            if (currentRow.size() == numberOfButtonsInRow) {
+                keyboard.add(currentRow);
+                currentRow = new InlineKeyboardRow();
             }
         }
 
-        if (!row.isEmpty()) {
-            row.add(getBackButton());
-            keyboard.add(row);
+        if (!currentRow.isEmpty()) {
+            currentRow.add(getBackButton());
+            keyboard.add(currentRow);
         } else {
             keyboard.add(new InlineKeyboardRow(getBackButton()));
         }
@@ -73,6 +73,14 @@ public class KeyboardUtils {
                                 .text("\uD83D\uDCDD Изменить")
                                 .callbackData(String.format("change_travel_%s%s", travelId, (number == -1 ? "" : "_number_" + number)))
                                 .build()),
+                        new InlineKeyboardRow(InlineKeyboardButton.builder()
+                                .text("\uD83C\uDFD9 Локации")
+                                .callbackData("locations_travel_" + travelId)
+                                .build()),
+                        new InlineKeyboardRow(InlineKeyboardButton.builder()
+                                .text("➕ Добавить локацию")
+                                .callbackData("add_travel_location_" + travelId)
+                                .build()),
                         new InlineKeyboardRow(getBackButton())
                 )).build();
     }
@@ -92,6 +100,47 @@ public class KeyboardUtils {
                                 .text("\uD83D\uDDD1️ Удалить")
                                 .callbackData("delete_travel_" + travelId)
                                 .build()),
+                        new InlineKeyboardRow(getBackButton())
+                )).build();
+    }
+
+    public static InlineKeyboardMarkup generateChoiceOfLocationsKeyboardMarkup(List<String> locations, List<Long> locationIds) {
+        int numberOfButtonsInRow = 3;
+
+        List<InlineKeyboardRow> keyboard = new ArrayList<>();
+        InlineKeyboardRow currentRow = new InlineKeyboardRow();
+
+        for (int i = 0; i < locations.size(); i++) {
+            currentRow.add(
+                    InlineKeyboardButton.builder()
+                            .text(String.valueOf(i + 1))
+                            .callbackData("choose_location_" + locationIds.get(i))
+                            .build()
+            );
+
+            if (currentRow.size() == numberOfButtonsInRow) {
+                keyboard.add(currentRow);
+                currentRow = new InlineKeyboardRow();
+            }
+        }
+
+        if (!currentRow.isEmpty()) {
+            keyboard.add(currentRow);
+        }
+
+        return new InlineKeyboardMarkup(keyboard);
+    }
+
+    public static InlineKeyboardMarkup generateLocationInfoKeyboardMarkup() {
+        return InlineKeyboardMarkup.builder()
+                .keyboard(List.of(
+                        new InlineKeyboardRow(getBackButton())
+                )).build();
+    }
+
+    public static InlineKeyboardMarkup generateTravelLocationsKeyboardMarkup() {
+        return InlineKeyboardMarkup.builder()
+                .keyboard(List.of(
                         new InlineKeyboardRow(getBackButton())
                 )).build();
     }

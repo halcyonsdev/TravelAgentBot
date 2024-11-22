@@ -2,6 +2,8 @@ package com.halcyon.travelagent.caching;
 
 import lombok.*;
 
+import java.util.List;
+
 @Builder
 @Getter
 @Setter
@@ -9,6 +11,5 @@ import lombok.*;
 @AllArgsConstructor
 public class ChatStatus {
     private ChatStatusType type;
-    private Integer messageId;
-    private String data;
+    private List<String> data;
 }
