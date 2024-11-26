@@ -1,6 +1,6 @@
 package com.halcyon.travelagent.controller;
 
-import com.halcyon.travelagent.TravelAgentBot;
+import com.halcyon.travelagent.bot.BotMessageHelper;
 import com.halcyon.travelagent.caching.CacheManager;
 import com.halcyon.travelagent.caching.ChatStatus;
 import com.halcyon.travelagent.caching.ChatStatusType;
@@ -24,8 +24,9 @@ import static com.halcyon.travelagent.util.KeyboardUtils.*;
 public class TravelController {
     private final TravelService travelService;
     private final CacheManager cacheManager;
+    private final BotMessageHelper botMessageHelper;
 
-    public void getTravels(TravelAgentBot bot, CallbackQuery callbackQuery) {
+    public void getTravels(CallbackQuery callbackQuery) {
         var message = callbackQuery.getMessage();
         List<Travel> userTravels = travelService.getUserTravels(message.getChatId());
 
@@ -37,10 +38,10 @@ public class TravelController {
                 .build();
         newMessage.enableMarkdown(true);
 
-        bot.editMessage(newMessage);
+        botMessageHelper.editMessage(newMessage);
     }
 
-    public void createTravel(TravelAgentBot bot, CallbackQuery callbackQuery) {
+    public void createTravel(CallbackQuery callbackQuery) {
         long travelId = travelService.createTravel(callbackQuery).getId();
 
         cacheManager.saveChatStatus(
@@ -51,36 +52,36 @@ public class TravelController {
                         .build()
         );
 
-        sendEnterDataMessage(bot, callbackQuery, "название");
+        sendEnterDataMessage(callbackQuery, "название");
     }
 
-    private void sendEnterDataMessage(TravelAgentBot bot, CallbackQuery callbackQuery, String data) {
+    private void sendEnterDataMessage(CallbackQuery callbackQuery, String data) {
         var message = SendMessage.builder()
                 .chatId(callbackQuery.getMessage().getChatId())
                 .text("Пожалуйста, введите " + data + " для путешествия")
                 .build();
 
-        bot.sendMessage(message);
+        botMessageHelper.sendMessage(message);
     }
 
-    public void changeTravelName(TravelAgentBot bot, Message message, long travelId) {
+    public void changeTravelName(Message message, long travelId) {
         long chatId = message.getChatId();
         String newTravelName = message.getText();
 
         if (newTravelName.length() > 100) {
             sendInvalidDataMessage(
-                    bot, message,
+                    message,
                     "*Длина названия путешествия не дожна превышать 100 символов!* Пожалуйта, введите название снова"
             );
         } else {
             travelService.changeName(travelId, newTravelName);
             cacheManager.remove(String.valueOf(chatId));
 
-            sendTravelsMessage(bot, chatId, message.getFrom().getId());
+            sendTravelsMessage(chatId, message.getFrom().getId());
         }
     }
 
-    private void sendInvalidDataMessage(TravelAgentBot bot, Message message, String errorText) {
+    private void sendInvalidDataMessage(Message message, String errorText) {
         var errorMessage = SendMessage.builder()
                 .chatId(message.getChatId())
                 .text(errorText)
@@ -88,10 +89,10 @@ public class TravelController {
                 .build();
 
         errorMessage.enableMarkdown(true);
-        bot.sendMessage(errorMessage);
+        botMessageHelper.sendMessage(errorMessage);
     }
 
-    private void sendTravelsMessage(TravelAgentBot bot, long chatId, long userId) {
+    private void sendTravelsMessage(long chatId, long userId) {
         List<Travel> userTravels = travelService.getUserTravels(userId);
 
         var travelsMessage = SendMessage.builder()
@@ -101,10 +102,10 @@ public class TravelController {
                 .build();
         travelsMessage.enableMarkdown(true);
 
-        bot.sendMessage(travelsMessage);
+        botMessageHelper.sendMessage(travelsMessage);
     }
 
-    public void getTravel(TravelAgentBot bot, CallbackQuery callbackQuery) {
+    public void getTravel(CallbackQuery callbackQuery) {
         String[] splitData = callbackQuery.getData().split("_");
         long travelId = Long.parseLong(splitData[2]);
 
@@ -118,7 +119,7 @@ public class TravelController {
                 .build();
         travelInfoMessage.enableMarkdown(true);
 
-        bot.editMessage(travelInfoMessage);
+        botMessageHelper.editMessage(travelInfoMessage);
     }
 
     private String getTravelInfoText(Travel travel, String[] splitData) {
@@ -133,7 +134,7 @@ public class TravelController {
         );
     }
 
-    public void changeTravel(TravelAgentBot bot, CallbackQuery callbackQuery) {
+    public void changeTravel(CallbackQuery callbackQuery) {
         String[] splitData = callbackQuery.getData().split("_");
         long travelId = Long.parseLong(splitData[2]);
 
@@ -147,17 +148,17 @@ public class TravelController {
                 .build();
         changeTravelMessage.enableMarkdown(true);
 
-        bot.editMessage(changeTravelMessage);
+        botMessageHelper.editMessage(changeTravelMessage);
     }
 
-    public void deleteTravel(TravelAgentBot bot, CallbackQuery callbackQuery) {
+    public void deleteTravel(CallbackQuery callbackQuery) {
         long travelId = Long.parseLong(callbackQuery.getData().split("_")[2]);
         travelService.deleteTravel(travelId);
 
-        getTravels(bot, callbackQuery);
+        getTravels(callbackQuery);
     }
 
-    public void enterNewTravelName(TravelAgentBot bot, CallbackQuery callbackQuery) {
+    public void enterNewTravelName(CallbackQuery callbackQuery) {
         long travelId = Long.parseLong(callbackQuery.getData().split("_")[3]);
 
         travelService.changeName(travelId, "");
@@ -170,10 +171,10 @@ public class TravelController {
                         .build()
         );
 
-        sendEnterDataMessage(bot, callbackQuery, "название");
+        sendEnterDataMessage(callbackQuery, "название");
     }
 
-    public void enterNewTravelDescription(TravelAgentBot bot, CallbackQuery callbackQuery) {
+    public void enterNewTravelDescription(CallbackQuery callbackQuery) {
         long travelId = Long.parseLong(callbackQuery.getData().split("_")[3]);
 
         travelService.changeDescription(travelId, "отсутствует");
@@ -186,16 +187,16 @@ public class TravelController {
                         .build()
         );
 
-        sendEnterDataMessage(bot, callbackQuery, "описание");
+        sendEnterDataMessage(callbackQuery, "описание");
     }
 
-    public void changeTravelDescription(TravelAgentBot bot, Message message, long travelId) {
+    public void changeTravelDescription(Message message, long travelId) {
         long chatId = message.getChatId();
         String newTravelDescription = message.getText();
 
         if (newTravelDescription.length() > 500) {
             sendInvalidDataMessage(
-                    bot, message,
+                    message,
                     "*Длина описания путешествия не должна превышать 500 символов!* Пожалуйта, введите описание снова"
             );
         }
@@ -203,6 +204,6 @@ public class TravelController {
         travelService.changeDescription(travelId, newTravelDescription);
         cacheManager.remove(String.valueOf(chatId));
 
-        sendTravelsMessage(bot, chatId, message.getFrom().getId());
+        sendTravelsMessage(chatId, message.getFrom().getId());
     }
 }

@@ -1,6 +1,7 @@
 package com.halcyon.travelagent.controller;
 
-import com.halcyon.travelagent.TravelAgentBot;
+import com.halcyon.travelagent.bot.BotMessageHelper;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
@@ -10,7 +11,10 @@ import org.telegram.telegrambots.meta.api.objects.message.Message;
 import static com.halcyon.travelagent.util.KeyboardUtils.generateStartInlineKeyboard;
 
 @Controller
+@RequiredArgsConstructor
 public class CommandController {
+    private final BotMessageHelper botMessageHelper;
+
     private static final String START_MESSAGE = """
                         *🌍 Привет! Я — твой персональный туристический помощник*.
                         
@@ -19,7 +23,7 @@ public class CommandController {
                         Просто скажите, что вас интересует, и я помогу вам найти лучшие предложения!
                         """;
 
-    public void handleStartCommand(TravelAgentBot bot, long chatId) {
+    public void handleStartCommand(long chatId) {
         var startMessage = SendMessage.builder()
                 .chatId(chatId)
                 .text(START_MESSAGE)
@@ -27,10 +31,10 @@ public class CommandController {
                 .build();
         startMessage.enableMarkdown(true);
 
-        bot.sendMessage(startMessage);
+        botMessageHelper.sendMessage(startMessage);
     }
 
-    public void handleBackCommand(TravelAgentBot bot, CallbackQuery callbackQuery) {
+    public void handleBackCommand(CallbackQuery callbackQuery) {
         var startMessage = EditMessageText.builder()
                 .chatId(callbackQuery.getMessage().getChatId())
                 .messageId(callbackQuery.getMessage().getMessageId())
@@ -39,10 +43,10 @@ public class CommandController {
                 .build();
         startMessage.enableMarkdown(true);
 
-        bot.editMessage(startMessage);
+        botMessageHelper.editMessage(startMessage);
     }
 
-    public void handleUnknownCommand(TravelAgentBot bot, Message message) {
+    public void handleUnknownCommand(Message message) {
         var unknownCommandMessage = SendMessage.builder()
                 .chatId(message.getChatId())
                 .text("***Неизвестная команда.***")
@@ -50,6 +54,6 @@ public class CommandController {
                 .build();
         unknownCommandMessage.enableMarkdown(true);
 
-        bot.sendMessage(unknownCommandMessage);
+        botMessageHelper.sendMessage(unknownCommandMessage);
     }
 }

@@ -1,5 +1,6 @@
 package com.halcyon.travelagent.util;
 
+import com.halcyon.travelagent.entity.Location;
 import com.halcyon.travelagent.entity.Travel;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
@@ -9,6 +10,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class KeyboardUtils {
+    private static final int NUMBER_OF_BUTTONS_IN_ROW = 3;
+
     private KeyboardUtils() {}
 
     public static InlineKeyboardMarkup generateStartInlineKeyboard() {
@@ -26,8 +29,6 @@ public class KeyboardUtils {
     }
 
     public static InlineKeyboardMarkup generateTravelsInlineKeyboard(List<Travel> travels) {
-        int numberOfButtonsInRow = 3;
-
         List<InlineKeyboardRow> keyboard = new ArrayList<>();
         InlineKeyboardRow currentRow = new InlineKeyboardRow();
 
@@ -43,7 +44,7 @@ public class KeyboardUtils {
 
             currentRow.add(travelButton);
 
-            if (currentRow.size() == numberOfButtonsInRow) {
+            if (currentRow.size() == NUMBER_OF_BUTTONS_IN_ROW) {
                 keyboard.add(currentRow);
                 currentRow = new InlineKeyboardRow();
             }
@@ -105,8 +106,6 @@ public class KeyboardUtils {
     }
 
     public static InlineKeyboardMarkup generateChoiceOfLocationsKeyboardMarkup(List<String> locations, List<Long> locationIds) {
-        int numberOfButtonsInRow = 3;
-
         List<InlineKeyboardRow> keyboard = new ArrayList<>();
         InlineKeyboardRow currentRow = new InlineKeyboardRow();
 
@@ -118,7 +117,7 @@ public class KeyboardUtils {
                             .build()
             );
 
-            if (currentRow.size() == numberOfButtonsInRow) {
+            if (currentRow.size() == NUMBER_OF_BUTTONS_IN_ROW) {
                 keyboard.add(currentRow);
                 currentRow = new InlineKeyboardRow();
             }
@@ -131,17 +130,58 @@ public class KeyboardUtils {
         return new InlineKeyboardMarkup(keyboard);
     }
 
-    public static InlineKeyboardMarkup generateLocationInfoKeyboardMarkup() {
+    public static InlineKeyboardMarkup generateLocationInfoKeyboardMarkup(long locationId) {
         return InlineKeyboardMarkup.builder()
                 .keyboard(List.of(
+                        new InlineKeyboardRow(InlineKeyboardButton.builder()
+                                .text("✍️ Изменить название")
+                                .callbackData("change_location_name_" + locationId)
+                                .build()),
+                        new InlineKeyboardRow(InlineKeyboardButton.builder()
+                                .text("\uD83C\uDF06 Изменить улицу")
+                                .callbackData("change_location_street_" + locationId)
+                                .build()),
+                        new InlineKeyboardRow(InlineKeyboardButton.builder()
+                                .text("\uD83D\uDD53 Изменить время отправления")
+                                .callbackData("change_location_start_" + locationId)
+                                .build()),
+                        new InlineKeyboardRow(InlineKeyboardButton.builder()
+                                .text("\uD83D\uDD57 Изменить время прибытия")
+                                .callbackData("change_location_end_" + locationId)
+                                .build()),
+                        new InlineKeyboardRow(InlineKeyboardButton.builder()
+                                .text("\uD83D\uDDD1 Удалить")
+                                .callbackData("delete_location_" + locationId)
+                                .build()),
                         new InlineKeyboardRow(getBackButton())
                 )).build();
     }
 
-    public static InlineKeyboardMarkup generateTravelLocationsKeyboardMarkup() {
-        return InlineKeyboardMarkup.builder()
-                .keyboard(List.of(
-                        new InlineKeyboardRow(getBackButton())
-                )).build();
+    public static InlineKeyboardMarkup generateTravelLocationsKeyboardMarkup(List<Location> locations) {
+        List<InlineKeyboardRow> keyboard = new ArrayList<>();
+        InlineKeyboardRow currentRow = new InlineKeyboardRow();
+
+        for (int i = 0; i < locations.size(); i++) {
+            currentRow.add(
+                    InlineKeyboardButton.builder()
+                            .text(String.valueOf(i + 1))
+                            .callbackData("get_location_" + locations.get(i).getId())
+                            .build()
+            );
+
+            if (currentRow.size() == NUMBER_OF_BUTTONS_IN_ROW) {
+                keyboard.add(currentRow);
+                currentRow = new InlineKeyboardRow();
+            }
+        }
+
+        if (!currentRow.isEmpty()) {
+            currentRow.add(getBackButton());
+            keyboard.add(currentRow);
+        } else {
+            keyboard.add(new InlineKeyboardRow(getBackButton()));
+        }
+
+        return new InlineKeyboardMarkup(keyboard);
     }
 }

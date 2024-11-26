@@ -1,4 +1,4 @@
-package com.halcyon.travelagent;
+package com.halcyon.travelagent.bot;
 
 import com.halcyon.travelagent.config.Credentials;
 import lombok.RequiredArgsConstructor;

@@ -2,6 +2,7 @@ package com.halcyon.travelagent.api.geoapify;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -19,10 +20,10 @@ public class GeoapifyAPI {
     private final RestTemplate restTemplate;
 
     private static final String API_KEY = getGeoapifyApiKey();
-    private static final String GEOCODE_URL = "https://api.geoapify.com/v1/geocode/search?city=%s&lang=ru&apiKey=" + API_KEY;
+    private static final String GEOCODE_URL = "https://api.geoapify.com/v1/geocode/search";
 
-    public Optional<List<String>> getLocations(String city) {
-        String jsonResponse = restTemplate.getForObject(String.format(GEOCODE_URL, city), String.class);
+    public Optional<List<String>> getLocations(String request) {
+        String jsonResponse = restTemplate.getForObject(String.format("%s?city=%s&lang=ru&apiKey=%s", GEOCODE_URL, request, API_KEY), String.class);
         if (jsonResponse == null) {
             return Optional.empty();
         }
@@ -38,5 +39,31 @@ public class GeoapifyAPI {
         }
 
         return Optional.of(cities);
+    }
+
+    public Optional<String> getStreet(String request, String text) {
+        String jsonResponse = restTemplate.getForObject(
+                String.format("%s?text=%s&street=%s&lang=ru&apiKey=%s", GEOCODE_URL, text, request, API_KEY),
+                String.class
+        );
+
+        if (jsonResponse == null) {
+            return Optional.empty();
+        }
+
+        JsonArray features = JsonParser.parseString(jsonResponse).getAsJsonObject().get("features").getAsJsonArray();
+        if (features.isEmpty()) {
+            return Optional.empty();
+        }
+
+        for (JsonElement feature : features) {
+            JsonObject properties = feature.getAsJsonObject().get("properties").getAsJsonObject();
+
+            if (properties.has("name")) {
+                return Optional.of(properties.get("name").getAsString());
+            }
+        }
+
+        return Optional.empty();
     }
 }

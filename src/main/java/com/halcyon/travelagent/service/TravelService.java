@@ -39,7 +39,7 @@ public class TravelService {
 
     public Travel findById(long travelId) {
         return travelRepository.findById(travelId)
-                .orElseThrow(() -> new TravelNotFoundException("Travel with this id not found."));
+                .orElseThrow(() -> new TravelNotFoundException("Travel with id=" + travelId + " not found."));
     }
 
     public void changeDescription(long travelId, String newDescription) {
