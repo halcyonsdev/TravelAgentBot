@@ -1,7 +1,6 @@
 package com.halcyon.travelagent.controller;
 
 import com.halcyon.travelagent.bot.BotMessageHelper;
-import com.halcyon.travelagent.bot.TravelAgentBot;
 import com.halcyon.travelagent.api.geoapify.GeoapifyAPI;
 import com.halcyon.travelagent.caching.CacheManager;
 import com.halcyon.travelagent.caching.ChatStatus;
@@ -11,7 +10,6 @@ import com.halcyon.travelagent.service.LocationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
-import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
 import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
 import org.telegram.telegrambots.meta.api.objects.message.Message;
 
@@ -22,8 +20,6 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Optional;
-
-import static com.halcyon.travelagent.util.KeyboardUtils.*;
 
 @Controller
 @RequiredArgsConstructor
@@ -160,6 +156,6 @@ public class CreateLocationController {
         long travelId = Long.parseLong(callbackQuery.getData().split("_")[2]);
         List<Location> locations = locationService.getTravelLocations(travelId);
 
-        botMessageHelper.getTravelLocations(callbackQuery, locations);
+        botMessageHelper.getTravelLocations(callbackQuery, locations, travelId);
     }
 }

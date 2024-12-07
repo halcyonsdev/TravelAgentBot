@@ -2,10 +2,7 @@ package com.halcyon.travelagent.bot;
 
 import com.halcyon.travelagent.caching.CacheManager;
 import com.halcyon.travelagent.caching.ChatStatus;
-import com.halcyon.travelagent.controller.CommandController;
-import com.halcyon.travelagent.controller.CreateLocationController;
-import com.halcyon.travelagent.controller.EditLocationController;
-import com.halcyon.travelagent.controller.TravelController;
+import com.halcyon.travelagent.controller.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -24,6 +21,7 @@ public class TravelAgentBot implements LongPollingSingleThreadUpdateConsumer {
     private final TravelController travelController;
     private final CreateLocationController createLocationController;
     private final EditLocationController editLocationController;
+    private final RouteController routeController;
     private final CacheManager cacheManager;
 
     @Override
@@ -91,6 +89,18 @@ public class TravelAgentBot implements LongPollingSingleThreadUpdateConsumer {
             editLocationController.enterNewLocationTime(callbackQuery, false);
         } else if (callbackData.startsWith("delete_location_")) {
             editLocationController.deleteLocation(callbackQuery);
+        } else if (callbackData.startsWith("build_route_")) {
+            routeController.chooseStartPoint(callbackQuery);
+        } else if (callbackData.startsWith("route_start_location_")) {
+            routeController.chooseDestinationPoint(callbackQuery);
+        } else if (callbackData.startsWith("route_destination_location_")) {
+            routeController.enterRouteName(callbackQuery);
+        } else if (callbackData.startsWith("routes_travel_")) {
+            routeController.getTravelRoutes(callbackQuery);
+        } else if (callbackData.startsWith("info_route_")) {
+            routeController.getRoute(callbackQuery);
+        } else if (callbackData.startsWith("delete_route_")) {
+            routeController.deleteRoute(callbackQuery);
         }
     }
 
@@ -124,6 +134,8 @@ public class TravelAgentBot implements LongPollingSingleThreadUpdateConsumer {
             case CHANGE_LOCATION_CITY -> editLocationController.changeLocationName(message, Long.parseLong(chatStatus.getData().get(0)));
             case CHANGE_LOCATION_START_TIME -> editLocationController.changeLocationTime(message, Long.parseLong(chatStatus.getData().get(0)), true);
             case CHANGE_LOCATION_END_TIME -> editLocationController.changeLocationTime(message, Long.parseLong(chatStatus.getData().get(0)), false);
+
+            case ROUTE_NAME -> routeController.createRoute(message, chatStatus.getData());
         }
     }
 }

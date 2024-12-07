@@ -162,6 +162,6 @@ public class EditLocationController {
         long locationId = Long.parseLong(callbackQuery.getData().split("_")[2]);
         long travelId = locationService.deleteLocationAndGetTravelId(locationId);
 
-        botMessageHelper.getTravelLocations(callbackQuery, locationService.getTravelLocations(travelId));
+        botMessageHelper.getTravelLocations(callbackQuery, locationService.getTravelLocations(travelId), travelId);
     }
 }

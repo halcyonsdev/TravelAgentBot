@@ -49,7 +49,7 @@ public class CommandController {
     public void handleUnknownCommand(Message message) {
         var unknownCommandMessage = SendMessage.builder()
                 .chatId(message.getChatId())
-                .text("***Неизвестная команда.***")
+                .text("***Неизвестная команда***")
                 .replyToMessageId(message.getMessageId())
                 .build();
         unknownCommandMessage.enableMarkdown(true);

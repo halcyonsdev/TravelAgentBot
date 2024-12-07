@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.client.okhttp.OkHttpTelegramClient;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.methods.send.SendPhoto;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
 import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
@@ -44,6 +45,14 @@ public class BotMessageHelper {
             telegramClient.execute(editMessageText);
         } catch (TelegramApiException e) {
             log.error("Failed to edit message.");
+        }
+    }
+
+    public void sendPhoto(SendPhoto sendPhoto) {
+        try {
+            telegramClient.execute(sendPhoto);
+        } catch (TelegramApiException e) {
+            log.error("Failed to send photo.");
         }
     }
 
@@ -146,35 +155,40 @@ public class BotMessageHelper {
         sendMessage(choiceOfCitiesMessage);
     }
 
-    public void getTravelLocations(CallbackQuery callbackQuery, List<Location> locations) {
+    public void getTravelLocations(CallbackQuery callbackQuery, List<Location> locations, long travelId) {
         String text = "___Нет созданных локаций для данного путешествия___";
 
         if (!locations.isEmpty()) {
-            StringBuilder locationsInfoBuilder = new StringBuilder();
-
-            for (int i = 0; i < locations.size(); i++) {
-                Location location = locations.get(i);
-                String locationInfo = String.format(
-                        "*%s%s* (%s - %s)%n",
-                        location.getName(),
-                        (location.getStreet().equals("отсутствует") ? "" : ", " + location.getStreet()),
-                        formatInstant(location.getStartTime()),
-                        formatInstant(location.getEndTime())
-                );
-
-                locationsInfoBuilder.append(i + 1).append(". ").append(locationInfo);
-                text = locationsInfoBuilder.toString();
-            }
+            text = getTravelLocationsText(locations);
         }
 
         var travelLocationsMessage = EditMessageText.builder()
                 .chatId(callbackQuery.getMessage().getChatId())
                 .messageId(callbackQuery.getMessage().getMessageId())
                 .text(text)
-                .replyMarkup(generateTravelLocationsKeyboardMarkup(locations))
+                .replyMarkup(generateGetTravelLocationsKeyboardMarkup(locations, travelId))
                 .build();
         travelLocationsMessage.enableMarkdown(true);
 
         editMessage(travelLocationsMessage);
+    }
+
+    public String getTravelLocationsText(List<Location> locations) {
+        StringBuilder locationsInfoBuilder = new StringBuilder();
+
+        for (int i = 0; i < locations.size(); i++) {
+            Location location = locations.get(i);
+            String locationInfo = String.format(
+                    "*%s%s* (%s - %s)%n",
+                    location.getName(),
+                    (location.getStreet().equals("отсутствует") ? "" : ", " + location.getStreet()),
+                    formatInstant(location.getStartTime()),
+                    formatInstant(location.getEndTime())
+            );
+
+            locationsInfoBuilder.append(i + 1).append(". ").append(locationInfo);
+        }
+
+        return locationsInfoBuilder.toString();
     }
 }

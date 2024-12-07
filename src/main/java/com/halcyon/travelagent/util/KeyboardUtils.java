@@ -1,6 +1,7 @@
 package com.halcyon.travelagent.util;
 
 import com.halcyon.travelagent.entity.Location;
+import com.halcyon.travelagent.entity.Route;
 import com.halcyon.travelagent.entity.Travel;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
@@ -33,7 +34,7 @@ public class KeyboardUtils {
         InlineKeyboardRow currentRow = new InlineKeyboardRow();
 
         int counter = 1;
-        for (Travel travel: travels) {
+        for (Travel travel : travels) {
             boolean isEmptyTravelName = travel.getName().isEmpty();
             String data = "info_travel_" + travel.getId();
 
@@ -79,8 +80,8 @@ public class KeyboardUtils {
                                 .callbackData("locations_travel_" + travelId)
                                 .build()),
                         new InlineKeyboardRow(InlineKeyboardButton.builder()
-                                .text("➕ Добавить локацию")
-                                .callbackData("add_travel_location_" + travelId)
+                                .text("\uD83D\uDDFA Маршруты")
+                                .callbackData("routes_travel_" + travelId)
                                 .build()),
                         new InlineKeyboardRow(getBackButton())
                 )).build();
@@ -96,6 +97,10 @@ public class KeyboardUtils {
                         new InlineKeyboardRow(InlineKeyboardButton.builder()
                                 .text("\uD83D\uDCDD Изменить описание")
                                 .callbackData("change_travel_description_" + travelId)
+                                .build()),
+                        new InlineKeyboardRow(InlineKeyboardButton.builder()
+                                .text("\uD83D\uDE97 Построить маршрут")
+                                .callbackData("build_route_" + travelId)
                                 .build()),
                         new InlineKeyboardRow(InlineKeyboardButton.builder()
                                 .text("\uD83D\uDDD1️ Удалить")
@@ -157,7 +162,11 @@ public class KeyboardUtils {
                 )).build();
     }
 
-    public static InlineKeyboardMarkup generateTravelLocationsKeyboardMarkup(List<Location> locations) {
+    public static InlineKeyboardMarkup generateGetTravelLocationsKeyboardMarkup(List<Location> locations, long travelId) {
+        return generateTravelLocationsKeyboardMarkup(locations, "get_location_", travelId);
+    }
+
+    private static InlineKeyboardMarkup generateTravelLocationsKeyboardMarkup(List<Location> locations, String callbackData, long travelId) {
         List<InlineKeyboardRow> keyboard = new ArrayList<>();
         InlineKeyboardRow currentRow = new InlineKeyboardRow();
 
@@ -165,7 +174,7 @@ public class KeyboardUtils {
             currentRow.add(
                     InlineKeyboardButton.builder()
                             .text(String.valueOf(i + 1))
-                            .callbackData("get_location_" + locations.get(i).getId())
+                            .callbackData(callbackData + locations.get(i).getId())
                             .build()
             );
 
@@ -174,14 +183,73 @@ public class KeyboardUtils {
                 currentRow = new InlineKeyboardRow();
             }
         }
-
         if (!currentRow.isEmpty()) {
-            currentRow.add(getBackButton());
             keyboard.add(currentRow);
-        } else {
+        }
+
+        if (travelId != -1) {
+            var createLocationButton = InlineKeyboardButton.builder()
+                    .text("\uD83D\uDCE5 Добавить локацию")
+                    .callbackData("add_travel_location_" + travelId)
+                    .build();
+
+            keyboard.add(new InlineKeyboardRow(createLocationButton));
             keyboard.add(new InlineKeyboardRow(getBackButton()));
         }
 
         return new InlineKeyboardMarkup(keyboard);
+    }
+
+    public static InlineKeyboardMarkup generateStartPointChoiceKeyboardMarkup(List<Location> locations) {
+        return generateTravelLocationsKeyboardMarkup(locations, "route_start_location_", -1);
+    }
+
+    public static InlineKeyboardMarkup generateDestinationPointChoiceKeyboardMarkup(List<Location> locations) {
+        return generateTravelLocationsKeyboardMarkup(locations, "route_destination_location_", -1);
+    }
+
+    public static InlineKeyboardMarkup generateTravelRoutesInlineKeyboard(List<Route> routes, long travelId) {
+        List<InlineKeyboardRow> keyboard = new ArrayList<>();
+        InlineKeyboardRow currentRow = new InlineKeyboardRow();
+
+        for (Route route : routes) {
+            var routeButton = InlineKeyboardButton.builder()
+                    .callbackData("info_route_" + route.getId())
+                    .text(route.getName())
+                    .build();
+
+            currentRow.add(routeButton);
+
+            if (currentRow.size() == NUMBER_OF_BUTTONS_IN_ROW) {
+                keyboard.add(currentRow);
+                currentRow = new InlineKeyboardRow();
+            }
+        }
+
+        if (!currentRow.isEmpty()) {
+            keyboard.add(currentRow);
+        }
+
+        var createRouteButton = InlineKeyboardButton.builder()
+                .text("\uD83D\uDE97 Построить маршрут")
+                .callbackData("build_route_" + travelId)
+                .build();
+
+        keyboard.add(new InlineKeyboardRow(createRouteButton));
+        keyboard.add(new InlineKeyboardRow(getBackButton()));
+
+        return new InlineKeyboardMarkup(keyboard);
+    }
+
+    public static InlineKeyboardMarkup generateRouteInfoInlineKeyboard(long routeId) {
+        return InlineKeyboardMarkup.builder()
+                .keyboard(List.of(
+                        new InlineKeyboardRow(InlineKeyboardButton.builder()
+                                .callbackData("delete_route_" + routeId)
+                                .text("\uD83D\uDDD1 Удалить")
+                                .build()),
+                        new InlineKeyboardRow(getBackButton())
+                ))
+                .build();
     }
 }

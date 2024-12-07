@@ -37,4 +37,8 @@ public class Travel {
     @OneToMany(mappedBy = "travel")
     @Cascade(org.hibernate.annotations.CascadeType.ALL)
     private List<Location> locations;
+
+    @OneToMany(mappedBy = "travel")
+    @Cascade(org.hibernate.annotations.CascadeType.ALL)
+    private List<Route> routes;
 }
