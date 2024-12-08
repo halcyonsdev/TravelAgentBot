@@ -2,6 +2,7 @@ package com.halcyon.travelagent.util;
 
 import com.halcyon.travelagent.entity.Location;
 import com.halcyon.travelagent.entity.Route;
+import com.halcyon.travelagent.entity.RoutePoint;
 import com.halcyon.travelagent.entity.Travel;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
@@ -245,11 +246,55 @@ public class KeyboardUtils {
         return InlineKeyboardMarkup.builder()
                 .keyboard(List.of(
                         new InlineKeyboardRow(InlineKeyboardButton.builder()
+                                .text("✍️ Изменить название")
+                                .callbackData("change_route_name_" + routeId)
+                                .build()),
+                        new InlineKeyboardRow(InlineKeyboardButton.builder()
+                                .callbackData("add_point_route_" + routeId)
+                                .text("\uD83D\uDCE5 Добавить точку")
+                                .build()),
+                        new InlineKeyboardRow(InlineKeyboardButton.builder()
                                 .callbackData("delete_route_" + routeId)
                                 .text("\uD83D\uDDD1 Удалить")
                                 .build()),
                         new InlineKeyboardRow(getBackButton())
                 ))
                 .build();
+    }
+
+    public static InlineKeyboardMarkup generateAddPointLocationsKeyboardMarkup(List<Location> locations) {
+        return generateTravelLocationsKeyboardMarkup(locations, "add_point_location_", -1);
+    }
+
+    public static InlineKeyboardMarkup generateChooseRoutePointKeyboardMarkup(List<RoutePoint> routePoints) {
+        List<InlineKeyboardRow> keyboard = new ArrayList<>();
+
+        var newStartPointButton = InlineKeyboardButton.builder()
+                .callbackData("new_start_point")
+                .text("В начало")
+                .build();
+
+        InlineKeyboardRow currentRow = new InlineKeyboardRow(newStartPointButton);
+
+        for (int i = 0; i < routePoints.size(); i++) {
+            currentRow.add(
+                    InlineKeyboardButton.builder()
+                            .callbackData("choose_route_point_" + routePoints.get(i).getId())
+                            .text(String.valueOf(i + 1))
+                            .build()
+            );
+
+            if (currentRow.size() == NUMBER_OF_BUTTONS_IN_ROW) {
+                keyboard.add(currentRow);
+                currentRow = new InlineKeyboardRow();
+            }
+        }
+
+        if (!currentRow.isEmpty()) {
+            keyboard.add(currentRow);
+        }
+
+
+        return new InlineKeyboardMarkup(keyboard);
     }
 }

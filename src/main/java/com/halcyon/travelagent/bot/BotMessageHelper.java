@@ -3,6 +3,9 @@ package com.halcyon.travelagent.bot;
 import com.halcyon.travelagent.caching.CacheManager;
 import com.halcyon.travelagent.config.Credentials;
 import com.halcyon.travelagent.entity.Location;
+import com.halcyon.travelagent.entity.Route;
+import com.halcyon.travelagent.entity.RoutePoint;
+import com.halcyon.travelagent.entity.Travel;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -11,6 +14,7 @@ import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.send.SendPhoto;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
 import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
+import org.telegram.telegrambots.meta.api.objects.InputFile;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import org.telegram.telegrambots.meta.generics.TelegramClient;
 
@@ -114,7 +118,7 @@ public class BotMessageHelper {
                         
                         *🌍️ Название:* %s
                         *🛫 Время отправления:* %s
-                        *📥 Время прибытия:* %s
+                        *🛬 Время прибытия:* %s
                         *🗺 Улица:* ___%s___
                         *🕒 Создано:* %s
                         """,
@@ -190,5 +194,68 @@ public class BotMessageHelper {
         }
 
         return locationsInfoBuilder.toString();
+    }
+
+    public void sendTravelRoutesMessage(long chatId, int messageId, Travel travel, List<Route> travelRoutes) {
+        var travelRoutesMessage = EditMessageText.builder()
+                .chatId(chatId)
+                .messageId(messageId)
+                .text(String.format("*Маршруты в путешествии \"%s\"*", travel.getName()))
+                .replyMarkup(generateTravelRoutesInlineKeyboard(travelRoutes, travel.getId()))
+                .build();
+        travelRoutesMessage.enableMarkdown(true);
+
+        editMessage(travelRoutesMessage);
+    }
+
+    public void sendErrorMessage(long chatId) {
+        var errorMessage = SendMessage.builder()
+                .chatId(chatId)
+                .text("Что-то пошло не так. Пожалуйста, попробуйте попытку позже.")
+                .build();
+
+        sendMessage(errorMessage);
+    }
+
+    public void sendRoute(long chatId, InputFile routeImage, Route route) {
+        var routePhoto = SendPhoto.builder()
+                .chatId(chatId)
+                .photo(routeImage)
+                .build();
+
+        var routeInfoMessage = SendMessage.builder()
+                .chatId(chatId)
+                .text(getRouteInfo(route))
+                .replyMarkup(generateRouteInfoInlineKeyboard(route.getId()))
+                .build();
+        routeInfoMessage.enableMarkdown(true);
+
+        sendPhoto(routePhoto);
+        sendMessage(routeInfoMessage);
+    }
+
+    private String getRouteInfo(Route route) {
+        StringBuilder routeInfo = new StringBuilder(
+                String.format("*Название:* \"%s\" %n%n*Точки маршрута:* %n", route.getName())
+        );
+
+        RoutePoint routePoint = route.getStartPoint();
+
+        int number = 1;
+        while (routePoint != null) {
+            routeInfo.append(number++).append(". ").append(routePoint.getName()).append("\n");
+            routePoint = routePoint.getNextPoint();
+        }
+
+        return routeInfo.toString();
+    }
+
+    public void sendInvalidRouteNameMessage(long chatId) {
+        var invalidNameMessage = SendMessage.builder()
+                .chatId(chatId)
+                .text("*Длина названия маршрута не должна превышать 100 символов!* Пожалуйта, введите название снова")
+                .build();
+
+        sendMessage(invalidNameMessage);
     }
 }

@@ -21,7 +21,7 @@ public class Route {
     @Column(name = "api_map_url")
     private String apiMapUrl;
 
-    @OneToOne(cascade = CascadeType.ALL)
+    @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     @JoinColumn(name = "start_point_id", referencedColumnName = "id")
     private RoutePoint startPoint;
 
@@ -29,7 +29,7 @@ public class Route {
     @JoinColumn(name = "destination_point_id", referencedColumnName = "id")
     private RoutePoint destinationPoint;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "travel_id", referencedColumnName = "id")
     private Travel travel;
 

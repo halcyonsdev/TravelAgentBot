@@ -4,21 +4,17 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.halcyon.travelagent.entity.Route;
+import com.halcyon.travelagent.entity.RoutePoint;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
-import org.springframework.web.client.HttpClientErrorException;
-import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestTemplate;
 import org.telegram.telegrambots.meta.api.objects.InputFile;
 
 import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 import static com.halcyon.travelagent.config.Credentials.getGeoapifyApiKey;
@@ -86,19 +82,57 @@ public class GeoapifyAPI {
         return Optional.of(features);
     }
 
-    public Optional<String> getRouteImageUrl(String startPointName, String destinationPointName) {
-        Optional<String> routeCoordinatesOptional = getRoute(startPointName, destinationPointName);
+    public Optional<String> getNewRouteImageUrl(String startPointName, String destinationPointName) {
+        Optional<Coordinate> startCoordinatesOptional = getLocationCoordinate(startPointName);
+        Optional<Coordinate> destinationCoordinatesOptional = getLocationCoordinate(destinationPointName);
+
+        if (startCoordinatesOptional.isEmpty() || destinationCoordinatesOptional.isEmpty()) {
+            return Optional.empty();
+        }
+
+        Coordinate startPointCoordinate = startCoordinatesOptional.get();
+        Coordinate destinationPointCoordinate = destinationCoordinatesOptional.get();
+
+        Optional<String> routeCoordinatesOptional = getRoute(List.of(startPointCoordinate, destinationPointCoordinate));
 
         if (routeCoordinatesOptional.isEmpty()) {
             return Optional.empty();
         }
 
         String url = String.format(
-                "%s?style=klokantech-basic&width=1200&height=700&type=short&geometry=polyline:%s;linewidth:2&apiKey=%s",
-                STATICMAP_URL, routeCoordinatesOptional.get(), API_KEY
+                "%s?style=klokantech-basic&width=1200&height=700&type=short&geometry=polyline:%s;linewidth:2&marker=%s|%s&apiKey=%s",
+                STATICMAP_URL, routeCoordinatesOptional.get(), getMarker(startPointCoordinate, 1), getMarker(destinationPointCoordinate, 2), API_KEY
         );
 
         return Optional.of(url);
+    }
+
+    private Optional<Coordinate> getLocationCoordinate(String text) {
+        String[] data = text.split(", улица ");
+        String url = String.format("%s?text=%s&lang=ru&apiKey=%s", GEOCODE_URL, text, API_KEY);
+
+        if (data.length == 2) {
+            url = String.format("%s?text=%s&street=%s&lang=ru&apiKey=%s", GEOCODE_URL, data[0], data[1], API_KEY);
+        }
+
+        Optional<JsonArray> features = getLocationFeatures(url);
+
+        if (features.isEmpty()) {
+            return Optional.empty();
+        }
+
+        JsonObject properties = features.get().get(0).getAsJsonObject().get("properties").getAsJsonObject();
+        String longitude = properties.get("lon").getAsString();
+        String latitude = properties.get("lat").getAsString();
+
+        return Optional.of(new Coordinate(longitude, latitude));
+    }
+
+    private String getMarker(Coordinate pointCoordinate, int number) {
+        return String.format(
+                "lonlat:%s,%s;type:material;size:large;icon:cloud;icontype:awesome;text:%s;whitecircle:no",
+                pointCoordinate.getLongitude(), pointCoordinate.getLatitude(), number
+        );
     }
 
     public Optional<InputFile> getRouteImageFile(String url) {
@@ -117,19 +151,16 @@ public class GeoapifyAPI {
         return Optional.empty();
     }
 
-    public Optional<String> getRoute(String startPointName, String destinationPointName) {
-        Optional<double[]> startPointCoordinates = getLocationCoordinates(startPointName);
-        Optional<double[]> destinationPointCoordinates = getLocationCoordinates(destinationPointName);
-
-        if (startPointCoordinates.isEmpty() || destinationPointCoordinates.isEmpty()) {
-            return Optional.empty();
+    public Optional<String> getRoute(List<Coordinate> pointsCoordinates) {
+        StringBuilder coordinatesText = new StringBuilder();
+        for (Coordinate coordinate : pointsCoordinates) {
+            coordinatesText.append(String.format("%s,%s|", coordinate.getLatitude(), coordinate.getLongitude()));
         }
 
         String url = String.format(
-                "%s?waypoints=%s,%s|%s,%s&mode=drive&type=short&apiKey=%s",
+                "%s?waypoints=%s&mode=drive&type=short&apiKey=%s",
                 ROUTING_URL,
-                startPointCoordinates.get()[1], startPointCoordinates.get()[0],
-                destinationPointCoordinates.get()[1], destinationPointCoordinates.get()[0],
+                coordinatesText.substring(0, coordinatesText.length() - 1),
                 API_KEY
         );
 
@@ -138,19 +169,21 @@ public class GeoapifyAPI {
             return Optional.empty();
         }
 
-        JsonArray coordinates = features.get().get(0).getAsJsonObject().get("geometry").getAsJsonObject().get("coordinates").getAsJsonArray().get(0).getAsJsonArray();
+        JsonArray coordinates = features.get().get(0).getAsJsonObject().get("geometry").getAsJsonObject().get("coordinates").getAsJsonArray();
         StringBuilder routeCoordinates = new StringBuilder();
 
-        int counter = 0;
-        for (JsonElement coordinate : coordinates) {
-            counter++;
+        for (int i = 0; i < coordinates.size(); i++) {
+            int counter = 0;
+            for (JsonElement coordinate : coordinates.get(i).getAsJsonArray()) {
+                counter++;
 
-            if (counter % getLinkDel(coordinates.size()) == 0) {
-                JsonArray step = coordinate.getAsJsonArray();
-                String latitude = step.get(0).getAsString();
-                String longitude = step.get(1).getAsString();
+                if (counter % getLinkDel(coordinates.get(i).getAsJsonArray().size()) == 0) {
+                    JsonArray step = coordinate.getAsJsonArray();
+                    String latitude = step.get(0).getAsString();
+                    String longitude = step.get(1).getAsString();
 
-                routeCoordinates.append(latitude).append(",").append(longitude).append(",");
+                    routeCoordinates.append(latitude).append(",").append(longitude).append(",");
+                }
             }
         }
 
@@ -165,24 +198,62 @@ public class GeoapifyAPI {
         return (int) Math.ceil(count / 60);
     }
 
-    public Optional<double[]> getLocationCoordinates(String text) {
-        String[] data = text.split(", улица ");
-        String url = String.format("%s?text=%s&lang=ru&apiKey=%s", GEOCODE_URL, text, API_KEY);
+    public Optional<String> getUpdatedRouteImageUrl(Route route, long routePointId, String newPointName) {
+        List<Coordinate> pointsCoordinates = new ArrayList<>();
+        RoutePoint currentPoint = route.getStartPoint();
 
-        if (data.length == 2) {
-            url = String.format("%s?text=%s&street=%s&lang=ru&apiKey=%s", GEOCODE_URL, data[0], data[1], API_KEY);
+        StringBuilder markers = new StringBuilder();
+        int number = 1;
+
+        if (routePointId == -1) {
+            Optional<Coordinate> newRouteCoordinateOptional = getLocationCoordinate(newPointName);
+
+            if (newRouteCoordinateOptional.isEmpty()) {
+                return Optional.empty();
+            }
+
+            pointsCoordinates.add(newRouteCoordinateOptional.get());
+            markers.append(getMarker(newRouteCoordinateOptional.get(), number++)).append("|");
         }
 
-        Optional<JsonArray> features = getLocationFeatures(url);
+        while (currentPoint != null) {
+            Optional<Coordinate> coordinateOptional = getLocationCoordinate(currentPoint.getName());
 
-        if (features.isEmpty()) {
+            if (coordinateOptional.isEmpty()) {
+                return Optional.empty();
+            }
+
+            pointsCoordinates.add(coordinateOptional.get());
+            markers.append(getMarker(coordinateOptional.get(), number++)).append("|");
+
+            if (currentPoint.getId() == routePointId) {
+                Optional<Coordinate> newRouteCoordinateOptional = getLocationCoordinate(newPointName);
+
+                if (newRouteCoordinateOptional.isEmpty()) {
+                    return Optional.empty();
+                }
+
+                pointsCoordinates.add(newRouteCoordinateOptional.get());
+                markers.append(getMarker(newRouteCoordinateOptional.get(), number++)).append("|");
+            }
+
+            currentPoint = currentPoint.getNextPoint();
+        }
+
+        Optional<String> coordinatesTextOptional = getRoute(pointsCoordinates);
+
+        if (coordinatesTextOptional.isEmpty()) {
             return Optional.empty();
         }
 
-        JsonObject properties = features.get().get(0).getAsJsonObject().get("properties").getAsJsonObject();
-        double longitude = properties.get("lon").getAsDouble();
-        double latitude = properties.get("lat").getAsDouble();
+        String url = String.format(
+                "%s?style=klokantech-basic&width=1200&height=700&type=short&geometry=polyline:%s;linewidth:2&marker=%s&apiKey=%s",
+                STATICMAP_URL,
+                coordinatesTextOptional.get(),
+                markers.substring(0, markers.length() - 1),
+                API_KEY
+        );
 
-        return Optional.of(new double[] {longitude, latitude});
+        return Optional.of(url);
     }
 }

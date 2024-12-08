@@ -21,7 +21,6 @@ import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
 import org.telegram.telegrambots.meta.api.objects.InputFile;
 import org.telegram.telegrambots.meta.api.objects.message.Message;
 
-import javax.swing.text.html.Option;
 import java.util.List;
 import java.util.Optional;
 
@@ -29,7 +28,7 @@ import static com.halcyon.travelagent.util.KeyboardUtils.*;
 
 @Controller
 @RequiredArgsConstructor
-public class RouteController {
+public class CreateRouteController {
     private final LocationService locationService;
     private final CacheManager cacheManager;
     private final BotMessageHelper botMessageHelper;
@@ -146,16 +145,16 @@ public class RouteController {
         String destinationPointName = cacheData.get(2);
 
         if (message.getText().length() > 100) {
-            sendInvalidRouteNameMessage(chatId);
+            botMessageHelper.sendInvalidRouteNameMessage(chatId);
             return;
         }
 
         try {
-            Optional<String> routeImageUrlOptional = geoapifyAPI.getRouteImageUrl(startPointName, destinationPointName);
+            Optional<String> routeImageUrlOptional = geoapifyAPI.getNewRouteImageUrl(startPointName, destinationPointName);
 
             if (routeImageUrlOptional.isEmpty()) {
                 cacheManager.remove(String.valueOf(chatId));
-                sendErrorMessage(chatId);
+                botMessageHelper.sendErrorMessage(chatId);
                 return;
             }
 
@@ -163,7 +162,7 @@ public class RouteController {
 
             if (routeImageOptional.isEmpty()) {
                 cacheManager.remove(String.valueOf(chatId));
-                sendErrorMessage(chatId);
+                botMessageHelper.sendErrorMessage(chatId);
                 return;
             }
 
@@ -171,57 +170,10 @@ public class RouteController {
             Travel travel = travelService.findById(travelId);
             Route route = routeService.createRoute(message.getText(), startPointName, destinationPointName, routeImageUrlOptional.get(), travel);
 
-            var routePhoto = SendPhoto.builder()
-                    .chatId(chatId)
-                    .photo(routeImage)
-                    .build();
-
-            var routeInfoMessage = SendMessage.builder()
-                    .chatId(chatId)
-                    .text(getRouteInfo(route))
-                    .replyMarkup(generateRouteInfoInlineKeyboard(route.getId()))
-                    .build();
-            routeInfoMessage.enableMarkdown(true);
-
-            botMessageHelper.sendPhoto(routePhoto);
-            botMessageHelper.sendMessage(routeInfoMessage);
+            botMessageHelper.sendRoute(chatId, routeImage, route);
         } catch (Exception e) {
-            sendErrorMessage(chatId);
+            botMessageHelper.sendErrorMessage(chatId);
         }
-    }
-
-    private void sendInvalidRouteNameMessage(long chatId) {
-        var invalidNameMessage = SendMessage.builder()
-                .chatId(chatId)
-                .text("*Длина названия маршрута не должна превышать 100 символов!* Пожалуйта, введите название снова")
-                .build();
-
-        botMessageHelper.sendMessage(invalidNameMessage);
-    }
-
-    private void sendErrorMessage(long chatId) {
-        var errorMessage = SendMessage.builder()
-                .chatId(chatId)
-                .text("Что-то пошло не так. Пожалуйста, попробуйте попытку позже.")
-                .build();
-
-        botMessageHelper.sendMessage(errorMessage);
-    }
-
-    private String getRouteInfo(Route route) {
-        StringBuilder routeInfo = new StringBuilder(
-                String.format("*Название:* \"%s\" %n%n*Точки маршрута:* %n", route.getName())
-        );
-
-        RoutePoint routePoint = route.getStartPoint();
-
-        int number = 1;
-        while (routePoint != null) {
-            routeInfo.append(number++).append(". ").append(routePoint.getName()).append("\n");
-            routePoint = routePoint.getNextPoint();
-        }
-
-        return routeInfo.toString();
     }
 
     public void getTravelRoutes(CallbackQuery callbackQuery) {
@@ -229,21 +181,8 @@ public class RouteController {
         long travelId = Long.parseLong(callbackQuery.getData().split("_")[2]);
         Travel travel = travelService.findById(travelId);
 
-        sendTravelRoutesMessage(travel, message.getChatId(), message.getMessageId());
-    }
-
-    private void sendTravelRoutesMessage(Travel travel, long chatId, int messageId) {
         List<Route> travelRoutes = routeService.getTravelRoutes(travel.getId());
-
-        var travelRoutesMessage = EditMessageText.builder()
-                .chatId(chatId)
-                .messageId(messageId)
-                .text(String.format("*Маршруты в путешествии \"%s\"*", travel.getName()))
-                .replyMarkup(generateTravelRoutesInlineKeyboard(travelRoutes, travel.getId()))
-                .build();
-        travelRoutesMessage.enableMarkdown(true);
-
-        botMessageHelper.editMessage(travelRoutesMessage);
+        botMessageHelper.sendTravelRoutesMessage(message.getChatId(), message.getMessageId(), travel, travelRoutes);
     }
 
     public void getRoute(CallbackQuery callbackQuery) {
@@ -254,31 +193,10 @@ public class RouteController {
         Optional<InputFile> routeImageOptional = geoapifyAPI.getRouteImageFile(route.getApiMapUrl());
 
         if (routeImageOptional.isEmpty()) {
-            sendErrorMessage(chatId);
+            botMessageHelper.sendErrorMessage(chatId);
             return;
         }
 
-        var routePhoto = SendPhoto.builder()
-                .chatId(chatId)
-                .photo(routeImageOptional.get())
-                .build();
-
-        var routeInfoMessage = SendMessage.builder()
-                .chatId(chatId)
-                .text(getRouteInfo(route))
-                .replyMarkup(generateRouteInfoInlineKeyboard(routeId))
-                .build();
-        routeInfoMessage.enableMarkdown(true);
-
-        botMessageHelper.sendPhoto(routePhoto);
-        botMessageHelper.sendMessage(routeInfoMessage);
-    }
-
-    public void deleteRoute(CallbackQuery callbackQuery) {
-        var message = callbackQuery.getMessage();
-        long routeId = Long.parseLong(callbackQuery.getData().split("_")[2]);
-        Travel travel = routeService.deleteRouteAndGetTravel(routeId);
-
-        sendTravelRoutesMessage(travel, message.getChatId(), message.getMessageId());
+        botMessageHelper.sendRoute(chatId, routeImageOptional.get(), route);
     }
 }
