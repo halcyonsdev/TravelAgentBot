@@ -34,14 +34,10 @@ public class KeyboardUtils {
         List<InlineKeyboardRow> keyboard = new ArrayList<>();
         InlineKeyboardRow currentRow = new InlineKeyboardRow();
 
-        int counter = 1;
         for (Travel travel : travels) {
-            boolean isEmptyTravelName = travel.getName().isEmpty();
-            String data = "info_travel_" + travel.getId();
-
             var travelButton = InlineKeyboardButton.builder()
-                    .callbackData(isEmptyTravelName ? data + "_number_" + counter : data)
-                    .text(isEmptyTravelName ? "Новое путешествие " + counter++ : travel.getName())
+                    .callbackData("info_travel_" + travel.getId())
+                    .text(travel.getName())
                     .build();
 
             currentRow.add(travelButton);

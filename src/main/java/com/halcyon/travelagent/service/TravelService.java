@@ -1,13 +1,10 @@
 package com.halcyon.travelagent.service;
 
-import com.halcyon.travelagent.caching.ChatStatus;
-import com.halcyon.travelagent.caching.ChatStatusType;
 import com.halcyon.travelagent.entity.Travel;
 import com.halcyon.travelagent.exception.TravelNotFoundException;
 import com.halcyon.travelagent.repository.TravelRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
 
 import java.util.List;
 
@@ -20,14 +17,14 @@ public class TravelService {
         return travelRepository.findAllByCreatorIdOrderByCreatedAt(userId);
     }
 
-    public Travel createTravel(CallbackQuery callbackQuery) {
+    public void createTravel(String name, long creatorId) {
         Travel travel = Travel.builder()
-                .name("")
+                .name(name)
                 .description("отсутствует")
-                .creatorId(callbackQuery.getFrom().getId())
+                .creatorId(creatorId)
                 .build();
 
-        return travelRepository.save(travel);
+        travelRepository.save(travel);
     }
 
     public void changeName(long travelId, String newName) {
@@ -49,7 +46,10 @@ public class TravelService {
         travelRepository.save(travel);
     }
 
-    public void deleteTravel(long travelId) {
-        travelRepository.deleteById(travelId);
+    public List<Travel> deleteTravelAndGetRemainingOnes(long travelId) {
+        Travel travel = findById(travelId);
+        travelRepository.delete(travel);
+
+        return getUserTravels(travel.getCreatorId());
     }
 }

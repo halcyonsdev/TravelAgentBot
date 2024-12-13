@@ -3,6 +3,7 @@ package com.halcyon.travelagent.caching;
 public enum ChatStatusType {
     TRAVEL_NAME,
     TRAVEL_DESCRIPTION,
+    CHANGE_TRAVEL_NAME,
     LOCATION_CITY,
     LOCATION_STREET,
     LOCATION_START_TIME,

@@ -15,6 +15,7 @@ import org.telegram.telegrambots.meta.api.methods.send.SendPhoto;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
 import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
 import org.telegram.telegrambots.meta.api.objects.InputFile;
+import org.telegram.telegrambots.meta.api.objects.message.Message;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import org.telegram.telegrambots.meta.generics.TelegramClient;
 
@@ -58,6 +59,61 @@ public class BotMessageHelper {
         } catch (TelegramApiException e) {
             log.error("Failed to send photo.");
         }
+    }
+
+    public String getTravelInfoText(Travel travel, String[] splitData) {
+        return String.format("""
+                        *🌍️ Название:* %s
+                        *📖 Описание:* ___%s___
+                        *🕒 Создано:* %s
+                        """,
+                travel.getName(),
+                travel.getDescription(),
+                travel.getCreatedAt().atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm"))
+        );
+    }
+
+    public void editMessageToUserTravels(long chatId, int messageId, List<Travel> userTravels) {
+        var userTravelsMessage = EditMessageText.builder()
+                .chatId(chatId)
+                .messageId(messageId)
+                .text("***Мои путешествия***")
+                .replyMarkup(generateTravelsInlineKeyboard(userTravels))
+                .build();
+        userTravelsMessage.enableMarkdown(true);
+
+        editMessage(userTravelsMessage);
+    }
+
+    public void sendUserTravelsMessage(long chatId, List<Travel> userTravels) {
+        var userTravelsMessage = SendMessage.builder()
+                .chatId(chatId)
+                .text("***Мои путешествия***")
+                .replyMarkup(generateTravelsInlineKeyboard(userTravels))
+                .build();
+        userTravelsMessage.enableMarkdown(true);
+
+        sendMessage(userTravelsMessage);
+    }
+
+    public void sendInvalidDataMessage(Message message, String errorText) {
+        var errorMessage = SendMessage.builder()
+                .chatId(message.getChatId())
+                .text(errorText)
+                .replyToMessageId(message.getMessageId())
+                .build();
+
+        errorMessage.enableMarkdown(true);
+        sendMessage(errorMessage);
+    }
+
+    public void sendEnterDataMessage(CallbackQuery callbackQuery, String data) {
+        var message = SendMessage.builder()
+                .chatId(callbackQuery.getMessage().getChatId())
+                .text("Пожалуйста, введите " + data + " для путешествия")
+                .build();
+
+        sendMessage(message);
     }
 
     public void sendEnterCityMessage(long chatId, boolean isForChange) {

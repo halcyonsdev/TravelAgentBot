@@ -18,7 +18,8 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class TravelAgentBot implements LongPollingSingleThreadUpdateConsumer {
     private final CommandController commandController;
-    private final TravelController travelController;
+    private final CreateTravelController createTravelController;
+    private final EditTravelController editTravelController;
     private final CreateLocationController createLocationController;
     private final EditLocationController editLocationController;
     private final CreateRouteController createRouteController;
@@ -51,8 +52,8 @@ public class TravelAgentBot implements LongPollingSingleThreadUpdateConsumer {
         String callbackData = callbackQuery.getData();
 
         switch (callbackData) {
-            case "get_travels" -> travelController.getTravels(callbackQuery);
-            case "create_travel" -> travelController.createTravel(callbackQuery);
+            case "get_travels" -> createTravelController.editMessageToUserTravels(callbackQuery.getFrom().getId(), callbackQuery.getMessage().getChatId(), callbackQuery.getMessage().getMessageId());
+            case "create_travel" -> createTravelController.enterTravelName(callbackQuery);
 
             case "back" -> commandController.handleBackCommand(callbackQuery);
 
@@ -63,15 +64,15 @@ public class TravelAgentBot implements LongPollingSingleThreadUpdateConsumer {
     private void handleCommands(CallbackQuery callbackQuery) {
         String callbackData = callbackQuery.getData();
         if (callbackData.startsWith("info_travel_")) {
-            travelController.getTravel(callbackQuery);
+            createTravelController.getTravel(callbackQuery);
         } else if (callbackData.startsWith("change_travel_name_")) {
-            travelController.enterNewTravelName(callbackQuery);
+            editTravelController.enterNewTravelName(callbackQuery);
         } else if (callbackData.startsWith("change_travel_description_")) {
-            travelController.enterNewTravelDescription(callbackQuery);
+            editTravelController.enterNewTravelDescription(callbackQuery);
         } else if (callbackData.startsWith("change_travel_")) {
-            travelController.changeTravel(callbackQuery);
+            editTravelController.changeTravel(callbackQuery);
         } else if (callbackData.startsWith("delete_travel_")) {
-            travelController.deleteTravel(callbackQuery);
+            editTravelController.deleteTravel(callbackQuery);
         } else if (callbackData.startsWith("add_travel_location")) {
             createLocationController.enterLocationCity(callbackQuery);
         } else if (callbackData.startsWith("choose_location_")) {
@@ -130,8 +131,10 @@ public class TravelAgentBot implements LongPollingSingleThreadUpdateConsumer {
         ChatStatus chatStatus = chatStatusOptional.get();
 
         switch (chatStatus.getType()) {
-            case TRAVEL_NAME -> travelController.changeTravelName(message, Long.parseLong(chatStatus.getData().get(0)));
-            case TRAVEL_DESCRIPTION -> travelController.changeTravelDescription(message, Long.parseLong(chatStatus.getData().get(0)));
+            case TRAVEL_NAME -> createTravelController.createTravel(message);
+            case TRAVEL_DESCRIPTION -> editTravelController.changeTravelDescription(message, Long.parseLong(chatStatus.getData().get(0)));
+            case CHANGE_TRAVEL_NAME -> editTravelController.changeTravelName(message, Long.parseLong(chatStatus.getData().get(0)));
+
             case LOCATION_CITY -> createLocationController.createLocation(message, Long.parseLong(chatStatus.getData().get(0)));
             case LOCATION_STREET -> editLocationController.changeLocationStreet(message, Long.parseLong(chatStatus.getData().get(0)));
             case LOCATION_START_TIME -> {
