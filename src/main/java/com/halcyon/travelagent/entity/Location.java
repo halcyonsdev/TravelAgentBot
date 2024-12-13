@@ -40,4 +40,11 @@ public class Location {
     @ManyToOne
     @JoinColumn(name = "travel_id", referencedColumnName = "id")
     private Travel travel;
+
+    @Override
+    public String toString() {
+        return "Location{" +
+                "name='" + name + '\'' +
+                '}';
+    }
 }

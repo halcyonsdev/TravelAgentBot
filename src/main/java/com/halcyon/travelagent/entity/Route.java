@@ -3,8 +3,11 @@ package com.halcyon.travelagent.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.List;
+
 @Entity
 @Table(name = "routes")
+@Builder
 @Getter
 @Setter
 @NoArgsConstructor
@@ -21,6 +24,9 @@ public class Route {
     @Column(name = "api_map_url")
     private String apiMapUrl;
 
+    @Column(name = "size")
+    private int size;
+
     @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     @JoinColumn(name = "start_point_id", referencedColumnName = "id")
     private RoutePoint startPoint;
@@ -32,10 +38,4 @@ public class Route {
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "travel_id", referencedColumnName = "id")
     private Travel travel;
-
-    public Route(String name, String apiMapUrl, Travel travel) {
-        this.name = name;
-        this.apiMapUrl = apiMapUrl;
-        this.travel = travel;
-    }
 }

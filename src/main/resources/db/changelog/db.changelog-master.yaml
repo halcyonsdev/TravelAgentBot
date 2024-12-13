@@ -4,6 +4,6 @@ databaseChangeLog:
   - include:
       file: db/changelog/changeset/v1_create_locations_table.sql
   - include:
-      file: db/changelog/changeset/v1_create_routes_table.sql
+      file: db/changelog/changeset/v2_create_routes_table.sql
   - include:
       file: db/changelog/changeset/v1_create_route_points_table.sql

@@ -74,12 +74,17 @@ public class GeoapifyAPI {
             return Optional.empty();
         }
 
-        JsonArray features = JsonParser.parseString(jsonResponse).getAsJsonObject().get("features").getAsJsonArray();
-        if (features.isEmpty()) {
+        try {
+            JsonArray features = JsonParser.parseString(jsonResponse).getAsJsonObject().get("features").getAsJsonArray();
+
+            if (features.isEmpty()) {
+                return Optional.empty();
+            }
+
+            return Optional.of(features);
+        } catch (Exception e) {
             return Optional.empty();
         }
-
-        return Optional.of(features);
     }
 
     public Optional<String> getNewRouteImageUrl(String startPointName, String destinationPointName) {
@@ -198,7 +203,7 @@ public class GeoapifyAPI {
         return (int) Math.ceil(count / 60);
     }
 
-    public Optional<String> getUpdatedRouteImageUrl(Route route, long routePointId, String newPointName) {
+    public Optional<String> getUpdatedRouteImageUrl(Route route, long routePointId, String newPointName, boolean isDeleted) {
         List<Coordinate> pointsCoordinates = new ArrayList<>();
         RoutePoint currentPoint = route.getStartPoint();
 
@@ -221,6 +226,11 @@ public class GeoapifyAPI {
 
             if (coordinateOptional.isEmpty()) {
                 return Optional.empty();
+            }
+
+            if (currentPoint.getId() == routePointId && isDeleted) {
+                currentPoint = currentPoint.getNextPoint();
+                continue;
             }
 
             pointsCoordinates.add(coordinateOptional.get());

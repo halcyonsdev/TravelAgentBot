@@ -197,6 +197,8 @@ public class BotMessageHelper {
     }
 
     public void sendTravelRoutesMessage(long chatId, int messageId, Travel travel, List<Route> travelRoutes) {
+
+
         var travelRoutesMessage = EditMessageText.builder()
                 .chatId(chatId)
                 .messageId(messageId)

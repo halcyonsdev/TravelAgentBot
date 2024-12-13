@@ -23,8 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-import static com.halcyon.travelagent.util.KeyboardUtils.generateAddPointLocationsKeyboardMarkup;
-import static com.halcyon.travelagent.util.KeyboardUtils.generateChooseRoutePointKeyboardMarkup;
+import static com.halcyon.travelagent.util.KeyboardUtils.*;
 
 @Controller
 @RequiredArgsConstructor
@@ -43,21 +42,10 @@ public class EditRouteController {
         List<Location> travelLocations = locationService.getTravelLocations(route.getTravel().getId());
         StringBuilder locationsText = new StringBuilder("*Выберите локацию для новой точки в маршруте:*\n\n");
 
-        int destinationLocationIndex = 0;
-        int number = 1;
-
         for (int i = 0; i < travelLocations.size(); i++) {
             Location location = travelLocations.get(i);
-
-            if (location.getName().equals(route.getDestinationPoint().getName())) {
-                destinationLocationIndex = i;
-                continue;
-            }
-
-            locationsText.append(String.format("%s. %s%n", number++, location.getName()));
+            locationsText.append(String.format("%s. %s%n", i + 1, location.getName()));
         }
-
-        travelLocations.remove(destinationLocationIndex);
 
         var choosePointLocationMessage = EditMessageText.builder()
                 .chatId(chatId)
@@ -110,7 +98,7 @@ public class EditRouteController {
                 .chatId(chatId)
                 .messageId(callbackQuery.getMessage().getMessageId())
                 .text(routePointsText.toString())
-                .replyMarkup(generateChooseRoutePointKeyboardMarkup(routePoints))
+                .replyMarkup(generateChoosePointForAddingKeyboardMarkup(routePoints))
                 .build();
         chooseRouteMessage.enableMarkdown(true);
 
@@ -131,6 +119,7 @@ public class EditRouteController {
 
         if (chatStatusOptional.isEmpty()) {
             botMessageHelper.sendErrorMessage(chatId);
+            cacheManager.remove(String.valueOf(chatId));
             return;
         }
 
@@ -139,7 +128,7 @@ public class EditRouteController {
         long routeId = Long.parseLong(chatStatus.getData().get(0));
 
         Route route = routeService.findById(routeId);
-        Optional<String> routeImageUrlOptional = geoapifyAPI.getUpdatedRouteImageUrl(route, routePointId, newPointName);
+        Optional<String> routeImageUrlOptional = geoapifyAPI.getUpdatedRouteImageUrl(route, routePointId, newPointName, false);
 
         if (routeImageUrlOptional.isEmpty()) {
             botMessageHelper.sendErrorMessage(chatId);
@@ -147,11 +136,11 @@ public class EditRouteController {
         }
 
         String routeImageUrl = routeImageUrlOptional.get();
-
         Optional<InputFile> routeImageFileOptional = geoapifyAPI.getRouteImageFile(routeImageUrl);
 
         if (routeImageFileOptional.isEmpty()) {
             botMessageHelper.sendErrorMessage(chatId);
+            cacheManager.remove(String.valueOf(chatId));
             return;
         }
 
@@ -201,6 +190,92 @@ public class EditRouteController {
             botMessageHelper.sendErrorMessage(chatId);
             return;
         }
+
+        botMessageHelper.sendRoute(chatId, routeImageFileOptional.get(), route);
+        cacheManager.remove(String.valueOf(chatId));
+    }
+
+    public void choosePointForDeleting(CallbackQuery callbackQuery) {
+        long chatId = callbackQuery.getMessage().getChatId();
+        long routeId = Long.parseLong(callbackQuery.getData().split("_")[3]);
+        Route route = routeService.findById(routeId);
+
+        if (route.getSize() == 2) {
+            sendCannotDeletePointMessage(chatId);
+            return;
+        }
+
+        StringBuilder routePointsText = new StringBuilder("*Выбери точку, которую хочешь удалить:*\n\n");
+        RoutePoint currentPoint = route.getStartPoint();
+        List<RoutePoint> routePoints = new ArrayList<>();
+
+        int number = 1;
+        while (currentPoint != null) {
+            routePointsText.append(String.format("%s. %s%n", number++, currentPoint.getName()));
+            routePoints.add(currentPoint);
+
+            currentPoint = currentPoint.getNextPoint();
+        }
+
+        var chooseRouteMessage = EditMessageText.builder()
+                .chatId(chatId)
+                .messageId(callbackQuery.getMessage().getMessageId())
+                .text(routePointsText.toString())
+                .replyMarkup(generateChoosePointForDeletingKeyboardMarkup(routePoints))
+                .build();
+        chooseRouteMessage.enableMarkdown(true);
+
+        botMessageHelper.editMessage(chooseRouteMessage);
+
+        cacheManager.saveChatStatus(
+                chatId,
+                ChatStatus.builder()
+                        .type(ChatStatusType.DELETE_ROUTE_POINT)
+                        .data(List.of(String.valueOf(routeId)))
+                        .build()
+        );
+    }
+
+    private void sendCannotDeletePointMessage(long chatId) {
+        var cannotDeletePointMessage = SendMessage.builder()
+                .chatId(chatId)
+                .text("Вы не можете удалить точку, так как маршрут должен содержать минимум две точки")
+                .build();
+
+        botMessageHelper.sendMessage(cannotDeletePointMessage);
+    }
+
+    public void deleteRoutePoint(CallbackQuery callbackQuery) {
+        long chatId = callbackQuery.getMessage().getChatId();
+        long routePointId = Long.parseLong(callbackQuery.getData().split("_")[3]);
+        Optional<ChatStatus> cacheDataOptional = cacheManager.fetch(String.valueOf(chatId), ChatStatus.class);
+
+        if (cacheDataOptional.isEmpty()) {
+            botMessageHelper.sendErrorMessage(chatId);
+            cacheManager.remove(String.valueOf(chatId));
+            return;
+        }
+
+        long routeId = Long.parseLong(cacheDataOptional.get().getData().get(0));
+        Route route = routeService.findById(routeId);
+        Optional<String> routeImageUrlOptional = geoapifyAPI.getUpdatedRouteImageUrl(route, routePointId, null, true);
+
+        if (routeImageUrlOptional.isEmpty()) {
+            botMessageHelper.sendErrorMessage(chatId);
+            cacheManager.remove(String.valueOf(chatId));
+            return;
+        }
+
+        String routeImageUrl = routeImageUrlOptional.get();
+        Optional<InputFile> routeImageFileOptional = geoapifyAPI.getRouteImageFile(routeImageUrl);
+
+        if (routeImageFileOptional.isEmpty()) {
+            botMessageHelper.sendErrorMessage(chatId);
+            cacheManager.remove(String.valueOf(chatId));
+            return;
+        }
+
+        route = routeService.deleteRoutePoint(route, routePointId, routeImageUrl);
 
         botMessageHelper.sendRoute(chatId, routeImageFileOptional.get(), route);
         cacheManager.remove(String.valueOf(chatId));

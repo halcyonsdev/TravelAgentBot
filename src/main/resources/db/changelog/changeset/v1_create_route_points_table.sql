@@ -9,6 +9,6 @@ CREATE TABLE IF NOT EXISTS route_points (
     name VARCHAR(500) NOT NULL,
     route_id BIGINT,
     next_point_id BIGINT,
-    FOREIGN KEY (route_id) REFERENCES routes(id),
-    FOREIGN KEY (next_point_id) REFERENCES route_points(id) ON DELETE SET NULL
+    FOREIGN KEY (route_id) REFERENCES routes(id) ON DELETE CASCADE,
+    FOREIGN KEY (next_point_id) REFERENCES route_points(id)
 )

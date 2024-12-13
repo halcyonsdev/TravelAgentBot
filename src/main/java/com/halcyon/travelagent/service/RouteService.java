@@ -19,7 +19,13 @@ public class RouteService {
     private final RoutePointRepository routePointRepository;
 
     public Route createRoute(String routeName, String startPointName, String destinationPointName, String apiMapUrl, Travel travel) {
-        Route route = routeRepository.save(new Route(routeName, apiMapUrl, travel));
+        Route route = Route.builder()
+                .name(routeName)
+                .apiMapUrl(apiMapUrl)
+                .size(2)
+                .travel(travel)
+                .build();
+        route = routeRepository.save(route);
 
         RoutePoint destinationPoint = RoutePoint.builder()
                 .name(destinationPointName)
@@ -48,6 +54,7 @@ public class RouteService {
     }
 
     public Travel deleteRouteAndGetTravel(long routeId) {
+        routePointRepository.deleteAllByRouteId(routeId);
         Route route = findById(routeId);
         routeRepository.delete(route);
         return route.getTravel();
@@ -57,6 +64,7 @@ public class RouteService {
     public Route addNewRoutePoint(long routeId, long afterPointId, String newPointName, String newApiMapUrl) {
         Route route = findById(routeId);
         route.setApiMapUrl(newApiMapUrl);
+        route.setSize(route.getSize() + 1);
         route = routeRepository.save(route);
 
         RoutePoint currentPoint = route.getStartPoint();
@@ -88,6 +96,7 @@ public class RouteService {
     @Transactional
     public Route addNewStartRoutePoint(long routeId, String newPointName, String newApiMapUrl) {
         Route route = findById(routeId);
+        route.setSize(route.getSize() + 1);
         route.setApiMapUrl(newApiMapUrl);
 
         RoutePoint startPoint = route.getStartPoint();
@@ -106,5 +115,45 @@ public class RouteService {
         Route route = findById(routeId);
         route.setName(newRouteName);
         return routeRepository.save(route);
+    }
+
+    @Transactional
+    public Route deleteRoutePoint(Route route, long routePointId, String newApiMapUrl) {
+        route.setSize(route.getSize() - 1);
+        route.setApiMapUrl(newApiMapUrl);
+        route = routeRepository.save(route);
+        RoutePoint currentPoint = route.getStartPoint();
+
+        if (route.getStartPoint().getId() == routePointId) {
+            RoutePoint newStartPoint = route.getStartPoint().getNextPoint();
+            routePointRepository.delete(route.getStartPoint());
+            route.setStartPoint(newStartPoint);
+            return routeRepository.save(route);
+        }
+
+        while (currentPoint.getNextPoint() != null) {
+            if (currentPoint.getNextPoint().getId() == routePointId) {
+                RoutePoint pointToDelete = currentPoint.getNextPoint();
+                if (currentPoint.getNextPoint().getNextPoint() == null) {
+                    currentPoint.setNextPoint(null);
+                    currentPoint = routePointRepository.save(currentPoint);
+
+                    routePointRepository.delete(pointToDelete);
+
+                    route.setDestinationPoint(currentPoint);
+                    route = routeRepository.save(route);
+                } else {
+                    currentPoint.setNextPoint(currentPoint.getNextPoint().getNextPoint());
+                    routePointRepository.save(currentPoint);
+                    routePointRepository.delete(pointToDelete);
+                }
+
+                break;
+            }
+
+            currentPoint = currentPoint.getNextPoint();
+        }
+
+        return route;
     }
 }

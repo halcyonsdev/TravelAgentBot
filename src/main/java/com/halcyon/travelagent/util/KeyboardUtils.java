@@ -254,6 +254,10 @@ public class KeyboardUtils {
                                 .text("\uD83D\uDCE5 Добавить точку")
                                 .build()),
                         new InlineKeyboardRow(InlineKeyboardButton.builder()
+                                .callbackData("delete_route_point_" + routeId)
+                                .text("❌ Удалить точку")
+                                .build()),
+                        new InlineKeyboardRow(InlineKeyboardButton.builder()
                                 .callbackData("delete_route_" + routeId)
                                 .text("\uD83D\uDDD1 Удалить")
                                 .build()),
@@ -266,20 +270,30 @@ public class KeyboardUtils {
         return generateTravelLocationsKeyboardMarkup(locations, "add_point_location_", -1);
     }
 
-    public static InlineKeyboardMarkup generateChooseRoutePointKeyboardMarkup(List<RoutePoint> routePoints) {
+    public static InlineKeyboardMarkup generateChoosePointForAddingKeyboardMarkup(List<RoutePoint> routePoints) {
+        return generateChooseRoutePointKeyboardMarkup(routePoints, "choose_add_point_");
+    }
+
+    public static InlineKeyboardMarkup generateChoosePointForDeletingKeyboardMarkup(List<RoutePoint> routePoints) {
+        return generateChooseRoutePointKeyboardMarkup(routePoints, "choose_delete_point_");
+    }
+
+    private static InlineKeyboardMarkup generateChooseRoutePointKeyboardMarkup(List<RoutePoint> routePoints, String callbackData) {
         List<InlineKeyboardRow> keyboard = new ArrayList<>();
+        InlineKeyboardRow currentRow = new InlineKeyboardRow();
 
-        var newStartPointButton = InlineKeyboardButton.builder()
-                .callbackData("new_start_point")
-                .text("В начало")
-                .build();
-
-        InlineKeyboardRow currentRow = new InlineKeyboardRow(newStartPointButton);
+        if (callbackData.equals("choose_add_point_")) {
+            var newStartPointButton = InlineKeyboardButton.builder()
+                    .callbackData("new_start_point")
+                    .text("В начало")
+                    .build();
+            currentRow.add(newStartPointButton);
+        }
 
         for (int i = 0; i < routePoints.size(); i++) {
             currentRow.add(
                     InlineKeyboardButton.builder()
-                            .callbackData("choose_route_point_" + routePoints.get(i).getId())
+                            .callbackData(callbackData + routePoints.get(i).getId())
                             .text(String.valueOf(i + 1))
                             .build()
             );
