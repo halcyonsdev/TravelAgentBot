@@ -27,6 +27,10 @@ public class LocationService {
         );
     }
 
+    public int getTravelLocationsCount(long travelId) {
+        return locationRepository.countLocationsByTravelId(travelId);
+    }
+
     public Location save(Location location) {
         return locationRepository.save(location);
     }

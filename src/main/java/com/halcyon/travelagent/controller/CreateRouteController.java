@@ -7,7 +7,6 @@ import com.halcyon.travelagent.caching.ChatStatus;
 import com.halcyon.travelagent.caching.ChatStatusType;
 import com.halcyon.travelagent.entity.Location;
 import com.halcyon.travelagent.entity.Route;
-import com.halcyon.travelagent.entity.RoutePoint;
 import com.halcyon.travelagent.entity.Travel;
 import com.halcyon.travelagent.service.LocationService;
 import com.halcyon.travelagent.service.RouteService;
@@ -15,7 +14,6 @@ import com.halcyon.travelagent.service.TravelService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
-import org.telegram.telegrambots.meta.api.methods.send.SendPhoto;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
 import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
 import org.telegram.telegrambots.meta.api.objects.InputFile;
@@ -39,6 +37,12 @@ public class CreateRouteController {
     public void chooseStartPoint(CallbackQuery callbackQuery) {
         long chatId = callbackQuery.getMessage().getChatId();
         long travelId = Long.parseLong(callbackQuery.getData().split("_")[2]);
+
+        if (routeService.getTravelRoutesCount(travelId) >= 20) {
+            sendExceededLimitMessage(chatId);
+            return;
+        }
+
         List<Location> locations = locationService.getTravelLocations(travelId);
 
         if (locations.isEmpty() || locations.size() == 1) {
@@ -70,6 +74,15 @@ public class CreateRouteController {
                             .build()
             );
         }
+    }
+
+    private void sendExceededLimitMessage(long chatId) {
+        var exceededLimitMessage = SendMessage.builder()
+                .chatId(chatId)
+                .text("Вы не можете создать больше 20 маршрутов в одном путешествии")
+                .build();
+
+        botMessageHelper.sendMessage(exceededLimitMessage);
     }
 
     public void chooseDestinationPoint(CallbackQuery callbackQuery) {

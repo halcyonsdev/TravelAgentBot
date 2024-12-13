@@ -35,6 +35,11 @@ public class CreateLocationController {
         long chatId = callbackQuery.getMessage().getChatId();
         long travelId = Long.parseLong(callbackQuery.getData().split("_")[3]);
 
+        if (locationService.getTravelLocationsCount(travelId) >= 20) {
+            sendExceededLimitMessage(chatId);
+            return;
+        }
+
         botMessageHelper.sendEnterCityMessage(chatId, false);
 
         cacheManager.saveChatStatus(
@@ -44,6 +49,15 @@ public class CreateLocationController {
                         .data(List.of(String.valueOf(travelId)))
                         .build()
         );
+    }
+
+    private void sendExceededLimitMessage(long chatId) {
+        var exceededLimitMessage = SendMessage.builder()
+                .chatId(chatId)
+                .text("Вы не можете создать больше 20 локаций в одном путешествии")
+                .build();
+
+        botMessageHelper.sendMessage(exceededLimitMessage);
     }
 
     public void createLocation(Message message, long travelId) {

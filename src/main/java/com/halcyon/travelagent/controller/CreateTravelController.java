@@ -8,6 +8,7 @@ import com.halcyon.travelagent.entity.Travel;
 import com.halcyon.travelagent.service.TravelService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
+import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
 import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
 import org.telegram.telegrambots.meta.api.objects.message.Message;
@@ -24,6 +25,11 @@ public class CreateTravelController {
     private final BotMessageHelper botMessageHelper;
 
     public void enterTravelName(CallbackQuery callbackQuery) {
+        if (travelService.getUserTravelsCount(callbackQuery.getFrom().getId()) >= 10) {
+            sendExceededLimitMessage(callbackQuery.getFrom().getId());
+            return;
+        }
+
         cacheManager.saveChatStatus(
                 callbackQuery.getMessage().getChatId(),
                 ChatStatus.builder()
@@ -32,6 +38,15 @@ public class CreateTravelController {
         );
 
         botMessageHelper.sendEnterDataMessage(callbackQuery, "название");
+    }
+
+    private void sendExceededLimitMessage(long chatId) {
+        var exceededLimitMessage = SendMessage.builder()
+                .chatId(chatId)
+                .text("Вы не можете создать больше 10 путешествий")
+                .build();
+
+        botMessageHelper.sendMessage(exceededLimitMessage);
     }
 
     public void editMessageToUserTravels(long userId, long chatId, int messageId) {

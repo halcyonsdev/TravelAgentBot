@@ -44,6 +44,14 @@ public class RouteService {
         return routeRepository.save(route);
     }
 
+    public int getTravelRoutesCount(long travelId) {
+        return routeRepository.countRoutesByTravelId(travelId);
+    }
+
+    public int getRoutePointsCount(long routeId) {
+        return routePointRepository.countRoutePointsByRouteId(routeId);
+    }
+
     public Route findById(long routeId) {
         return routeRepository.findById(routeId)
                 .orElseThrow(() -> new RouteNotFoundException("Route with id=" + routeId + " not found."));

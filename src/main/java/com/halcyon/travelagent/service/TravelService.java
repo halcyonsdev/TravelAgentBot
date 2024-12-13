@@ -27,6 +27,10 @@ public class TravelService {
         travelRepository.save(travel);
     }
 
+    public int getUserTravelsCount(long userId) {
+        return travelRepository.countTravelsByCreatorId(userId);
+    }
+
     public void changeName(long travelId, String newName) {
         Travel travel = findById(travelId);
         travel.setName(newName);

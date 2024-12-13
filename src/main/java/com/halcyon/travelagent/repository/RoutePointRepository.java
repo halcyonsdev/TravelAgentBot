@@ -14,4 +14,7 @@ public interface RoutePointRepository extends JpaRepository<RoutePoint, Long> {
     @Transactional
     @Query("DELETE FROM RoutePoint rp WHERE rp.route.id = :routeId")
     void deleteAllByRouteId(@Param("routeId") long routeId);
+
+    @Query("SELECT COUNT(*) FROM RoutePoint rp WHERE rp.route.id = :routeId")
+    int countRoutePointsByRouteId(@Param("routeId") long routeId);
 }

@@ -38,6 +38,10 @@ public class EditRouteController {
         long chatId = callbackQuery.getMessage().getChatId();
         long routeId = Long.parseLong(callbackQuery.getData().split("_")[3]);
 
+        if (routeService.getRoutePointsCount(routeId) >= 10) {
+            sendExceededLimitMessage(chatId);
+        }
+
         Route route = routeService.findById(routeId);
         List<Location> travelLocations = locationService.getTravelLocations(route.getTravel().getId());
         StringBuilder locationsText = new StringBuilder("*Выберите локацию для новой точки в маршруте:*\n\n");
@@ -64,6 +68,15 @@ public class EditRouteController {
                         .data(List.of(String.valueOf(routeId)))
                         .build()
         );
+    }
+
+    private void sendExceededLimitMessage(long chatId) {
+        var exceededLimitMessage = SendMessage.builder()
+                .chatId(chatId)
+                .text("Вы не можете создать больше 10 точек в одном маршруте")
+                .build();
+
+        botMessageHelper.sendMessage(exceededLimitMessage);
     }
 
     public void choosePointLocation(CallbackQuery callbackQuery) {
