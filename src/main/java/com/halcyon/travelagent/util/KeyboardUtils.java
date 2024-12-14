@@ -1,9 +1,6 @@
 package com.halcyon.travelagent.util;
 
-import com.halcyon.travelagent.entity.Location;
-import com.halcyon.travelagent.entity.Route;
-import com.halcyon.travelagent.entity.RoutePoint;
-import com.halcyon.travelagent.entity.Travel;
+import com.halcyon.travelagent.entity.*;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardRow;
@@ -65,6 +62,13 @@ public class KeyboardUtils {
                 .build();
     }
 
+    public static InlineKeyboardButton getBackWithDeleteButton(int messageId) {
+        return InlineKeyboardButton.builder()
+                .text("⬅️ Назад")
+                .callbackData("back_" + messageId)
+                .build();
+    }
+
     public static InlineKeyboardMarkup generateTravelInfoKeyboardMarkup(long travelId, int number) {
         return InlineKeyboardMarkup.builder()
                 .keyboard(List.of(
@@ -79,6 +83,10 @@ public class KeyboardUtils {
                         new InlineKeyboardRow(InlineKeyboardButton.builder()
                                 .text("\uD83D\uDDFA Маршруты")
                                 .callbackData("routes_travel_" + travelId)
+                                .build()),
+                        new InlineKeyboardRow(InlineKeyboardButton.builder()
+                                .text("\uD83D\uDDD2 Заметки")
+                                .callbackData("travel_notes_" + travelId)
                                 .build()),
                         new InlineKeyboardRow(getBackButton())
                 )).build();
@@ -306,5 +314,54 @@ public class KeyboardUtils {
 
 
         return new InlineKeyboardMarkup(keyboard);
+    }
+
+    public static InlineKeyboardMarkup generateTravelNotesKeyboardMarkup(List<Note> notes, long travelId) {
+        List<InlineKeyboardRow> keyboard = new ArrayList<>();
+        InlineKeyboardRow currentRow = new InlineKeyboardRow();
+
+        for (Note note : notes) {
+            var noteButton = InlineKeyboardButton.builder()
+                    .callbackData("note_info_" + note.getId())
+                    .text(note.getName())
+                    .build();
+
+            currentRow.add(noteButton);
+
+            if (currentRow.size() == NUMBER_OF_BUTTONS_IN_ROW) {
+                keyboard.add(currentRow);
+                currentRow = new InlineKeyboardRow();
+            }
+        }
+
+        if (!currentRow.isEmpty()) {
+            keyboard.add(currentRow);
+        }
+
+        var createNoteButton = InlineKeyboardButton.builder()
+                .text("✍️ Создать заметку")
+                .callbackData("create_travel_note_" + travelId)
+                .build();
+
+        keyboard.add(new InlineKeyboardRow(createNoteButton));
+        keyboard.add(new InlineKeyboardRow(getBackButton()));
+
+        return new InlineKeyboardMarkup(keyboard);
+    }
+
+    public static InlineKeyboardMarkup generateNoteInfoKeyboardMarkup(long noteId, int messageId) {
+        return InlineKeyboardMarkup.builder()
+                .keyboard(List.of(
+                        new InlineKeyboardRow(InlineKeyboardButton.builder()
+                                .text("\uD83D\uDEE0 Поменять содержимое")
+                                .callbackData("change_note_content_" + noteId)
+                                .build()),
+                        new InlineKeyboardRow(InlineKeyboardButton.builder()
+                                .text("\uD83D\uDDD1 Удалить")
+                                .callbackData("delete_note_" + noteId)
+                                .build()),
+                        new InlineKeyboardRow(messageId != -1 ? getBackWithDeleteButton(messageId) : getBackButton())
+                ))
+                .build();
     }
 }

@@ -46,6 +46,13 @@ public class CommandController {
         botMessageHelper.editMessage(startMessage);
     }
 
+    public void handleBackWithDeleteCommand(CallbackQuery callbackQuery) {
+        int messageId = Integer.parseInt(callbackQuery.getData().split("_")[1]);
+        botMessageHelper.deleteMessage(callbackQuery.getMessage().getChatId(), messageId);
+
+        handleBackCommand(callbackQuery);
+    }
+
     public void handleUnknownCommand(Message message) {
         var unknownCommandMessage = SendMessage.builder()
                 .chatId(message.getChatId())

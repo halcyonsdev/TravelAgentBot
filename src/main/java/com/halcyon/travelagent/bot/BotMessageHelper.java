@@ -2,16 +2,13 @@ package com.halcyon.travelagent.bot;
 
 import com.halcyon.travelagent.caching.CacheManager;
 import com.halcyon.travelagent.config.Credentials;
-import com.halcyon.travelagent.entity.Location;
-import com.halcyon.travelagent.entity.Route;
-import com.halcyon.travelagent.entity.RoutePoint;
-import com.halcyon.travelagent.entity.Travel;
+import com.halcyon.travelagent.entity.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.client.okhttp.OkHttpTelegramClient;
-import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
-import org.telegram.telegrambots.meta.api.methods.send.SendPhoto;
+import org.telegram.telegrambots.meta.api.methods.send.*;
+import org.telegram.telegrambots.meta.api.methods.updatingmessages.DeleteMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
 import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
 import org.telegram.telegrambots.meta.api.objects.InputFile;
@@ -37,12 +34,14 @@ public class BotMessageHelper {
 
     private static final String DATE_PATTERN = "dd.MM.yyyy HH:mm";
 
-    public void sendMessage(SendMessage sendMessage) {
+    public Message sendMessage(SendMessage sendMessage) {
         try {
-            telegramClient.execute(sendMessage);
+            return telegramClient.execute(sendMessage);
         } catch (TelegramApiException e) {
             log.error("Failed to send message.");
         }
+
+        return null;
     }
 
     public void editMessage(EditMessageText editMessageText) {
@@ -53,15 +52,50 @@ public class BotMessageHelper {
         }
     }
 
-    public void sendPhoto(SendPhoto sendPhoto) {
+    public void deleteMessage(long chatId, int messageId) {
+        DeleteMessage deleteMessage = DeleteMessage.builder()
+                .chatId(chatId)
+                .messageId(messageId)
+                .build();
+
         try {
-            telegramClient.execute(sendPhoto);
+            telegramClient.execute(deleteMessage);
         } catch (TelegramApiException e) {
-            log.error("Failed to send photo.");
+            log.error("Failed to delete message.");
         }
     }
 
-    public String getTravelInfoText(Travel travel, String[] splitData) {
+    public Message sendPhoto(SendPhoto sendPhoto) {
+        try {
+            return telegramClient.execute(sendPhoto);
+        } catch (TelegramApiException e) {
+            log.error("Failed to send photo.");
+        }
+
+        return null;
+    }
+
+    public Message sendFile(SendDocument sendDocument) {
+        try {
+            return telegramClient.execute(sendDocument);
+        } catch (TelegramApiException e) {
+            log.error("Failed to send file.");
+        }
+
+        return null;
+    }
+
+    public Message sendVoice(SendVoice sendVoice) {
+        try {
+            return telegramClient.execute(sendVoice);
+        } catch (TelegramApiException e) {
+            log.error("Failed to send voice.");
+        }
+
+        return null;
+    }
+
+    public String getTravelInfoText(Travel travel) {
         return String.format("""
                         *🌍️ Название:* %s
                         *📖 Описание:* ___%s___
@@ -315,5 +349,97 @@ public class BotMessageHelper {
                 .build();
 
         sendMessage(invalidNameMessage);
+    }
+
+    public void sendNoteInfo(long chatId, int messageId, Note note) {
+        String noteInfoText = String.format(
+                """
+                Заметка в путешествии "%s"
+                
+                *🏷 %s*
+                _%s_
+                """,
+                note.getTravel().getName(),
+                note.getName(),
+                note.getCreatedAt().atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm"))
+        );
+
+        var noteInfoMessage = SendMessage.builder()
+                .chatId(chatId)
+                .text(noteInfoText)
+                .build();
+        noteInfoMessage.enableMarkdown(true);
+
+        switch (note.getType()) {
+            case TEXT -> {
+                var noteInfoEditMessage = EditMessageText.builder()
+                        .chatId(chatId)
+                        .messageId(messageId)
+                        .text(getTextNoteInfo(note))
+                        .replyMarkup(generateNoteInfoKeyboardMarkup(note.getId(), -1))
+                        .build();
+                noteInfoEditMessage.enableMarkdown(true);
+
+                editMessage(noteInfoEditMessage);
+            }
+
+            case PHOTO -> {
+                deleteMessage(chatId, messageId);
+
+                var notePhoto = SendPhoto.builder()
+                        .chatId(chatId)
+                        .photo(new InputFile(note.getFileId()))
+                        .build();
+
+                Message sentMessage = sendPhoto(notePhoto);
+
+                noteInfoMessage.setReplyMarkup(generateNoteInfoKeyboardMarkup(note.getId(), sentMessage.getMessageId()));
+                sendMessage(noteInfoMessage);
+            }
+
+            case FILE -> {
+                deleteMessage(chatId, messageId);
+
+                var noteFile = SendDocument.builder()
+                        .chatId(chatId)
+                        .document(new InputFile(note.getFileId()))
+                        .build();
+
+                Message sentMessage = sendFile(noteFile);
+
+                noteInfoMessage.setReplyMarkup(generateNoteInfoKeyboardMarkup(note.getId(), sentMessage.getMessageId()));
+                sendMessage(noteInfoMessage);
+            }
+
+            default -> {
+                deleteMessage(chatId, messageId);
+
+                var noteVoice = SendVoice.builder()
+                        .chatId(chatId)
+                        .voice(new InputFile(note.getFileId()))
+                        .build();
+
+                Message sentMessage = sendVoice(noteVoice);
+
+                noteInfoMessage.setReplyMarkup(generateNoteInfoKeyboardMarkup(note.getId(), sentMessage.getMessageId()));
+                sendMessage(noteInfoMessage);
+            }
+        }
+    }
+
+    private String getTextNoteInfo(Note note) {
+        return String.format(
+                """
+                Заметка в путешествии "%s"
+                *🏷 %s*
+
+                %s
+                
+                _%s_
+                """,
+                note.getTravel().getName(),
+                note.getName(),
+                note.getText(),
+                note.getCreatedAt().atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm")));
     }
 }

@@ -32,7 +32,7 @@ public class EditTravelController {
         var changeTravelMessage = EditMessageText.builder()
                 .chatId(callbackQuery.getMessage().getChatId())
                 .messageId(callbackQuery.getMessage().getMessageId())
-                .text(botMessageHelper.getTravelInfoText(travel, splitData))
+                .text(botMessageHelper.getTravelInfoText(travel))
                 .replyMarkup(generateChangeTravelKeyboardMarkup(travelId))
                 .build();
         changeTravelMessage.enableMarkdown(true);

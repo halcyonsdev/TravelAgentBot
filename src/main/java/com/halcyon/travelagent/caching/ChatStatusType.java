@@ -17,5 +17,7 @@ public enum ChatStatusType {
     ROUTE_NAME,
     ROUTE_POINT,
     CHANGE_ROUTE_NAME,
-    DELETE_ROUTE_POINT
+    DELETE_ROUTE_POINT,
+    NOTE_NAME,
+    NOTE_CONTENT
 }

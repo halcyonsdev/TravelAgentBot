@@ -62,7 +62,7 @@ public class CreateTravelController {
         if (travelName.length() > 100) {
             botMessageHelper.sendInvalidDataMessage(
                     message,
-                    "*Длина названия путешествия не дожна превышать 100 символов!* Пожалуйта, введите название снов1а"
+                    "*Длина названия путешествия не дожна превышать 100 символов!* Пожалуйта, введите название снова"
             );
         } else {
             travelService.createTravel(travelName, userId);
@@ -82,7 +82,7 @@ public class CreateTravelController {
         var travelInfoMessage = EditMessageText.builder()
                 .chatId(callbackQuery.getMessage().getChatId())
                 .messageId(callbackQuery.getMessage().getMessageId())
-                .text(botMessageHelper.getTravelInfoText(travel, splitData))
+                .text(botMessageHelper.getTravelInfoText(travel))
                 .replyMarkup(generateTravelInfoKeyboardMarkup(travelId, splitData.length == 5 ? Integer.parseInt(splitData[4]): -1))
                 .build();
         travelInfoMessage.enableMarkdown(true);
