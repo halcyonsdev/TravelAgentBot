@@ -101,6 +101,7 @@ public class CreateNoteController {
         botMessageHelper.deleteMessage(chatId, messageId);
 
         if (message.hasText() && message.getText().length() > 500) {
+            botMessageHelper.deleteMessage(chatId, message.getMessageId());
             String errorText = "*Длина текста заметки не дожна превышать 500 символов!* Пожалуйта, отправьте текст / аудио / фото / файл снова";
             botMessageHelper.sendInvalidDataMessage(message, errorText);
             return;
@@ -125,25 +126,19 @@ public class CreateNoteController {
             return;
         }
 
-        botMessageHelper.deleteMessage(chatId, message.getMessageId());
         botMessageHelper.sendNoteInfo(chatId, message.getMessageId(), note);
         cacheManager.remove(String.valueOf(chatId));
     }
 
     public void sendTravelNotes(CallbackQuery callbackQuery) {
+        long chatId = callbackQuery.getMessage().getChatId();
+        int messageId = callbackQuery.getMessage().getMessageId();
+
         long travelId = Long.parseLong(callbackQuery.getData().split("_")[2]);
         Travel travel = travelService.findById(travelId);
         List<Note> travelNotes = noteService.getTravelNotes(travelId);
 
-        var travelNotesMessage = EditMessageText.builder()
-                .chatId(callbackQuery.getMessage().getChatId())
-                .messageId(callbackQuery.getMessage().getMessageId())
-                .text(String.format("*Заметки в путешествии \"%s\"*", travel.getName()))
-                .replyMarkup(generateTravelNotesKeyboardMarkup(travelNotes, travelId))
-                .build();
-        travelNotesMessage.enableMarkdown(true);
-
-        botMessageHelper.editMessage(travelNotesMessage);
+        botMessageHelper.sendTravelNotesMessage(chatId, messageId, travel, travelNotes);
     }
 
     public void sendNoteInfo(CallbackQuery callbackQuery) {

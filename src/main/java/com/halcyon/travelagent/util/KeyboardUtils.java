@@ -353,12 +353,16 @@ public class KeyboardUtils {
         return InlineKeyboardMarkup.builder()
                 .keyboard(List.of(
                         new InlineKeyboardRow(InlineKeyboardButton.builder()
+                                .text("✍️ Поменять название")
+                                .callbackData("change_note_name_" + noteId + (messageId != -1 ? "_message_" + messageId : ""))
+                                .build()),
+                        new InlineKeyboardRow(InlineKeyboardButton.builder()
                                 .text("\uD83D\uDEE0 Поменять содержимое")
-                                .callbackData("change_note_content_" + noteId)
+                                .callbackData("change_note_content_" + noteId + (messageId != -1 ? "_message_" + messageId : ""))
                                 .build()),
                         new InlineKeyboardRow(InlineKeyboardButton.builder()
                                 .text("\uD83D\uDDD1 Удалить")
-                                .callbackData("delete_note_" + noteId)
+                                .callbackData("delete_note_" + noteId + (messageId != -1 ? "_message_" + messageId : ""))
                                 .build()),
                         new InlineKeyboardRow(messageId != -1 ? getBackWithDeleteButton(messageId) : getBackButton())
                 ))

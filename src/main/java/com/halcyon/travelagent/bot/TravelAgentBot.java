@@ -27,6 +27,7 @@ public class TravelAgentBot implements LongPollingSingleThreadUpdateConsumer {
     private final EditTravelController editTravelController;
     private final EditLocationController editLocationController;
     private final EditRouteController editRouteController;
+    private final EditNoteController editNoteController;
 
     private final CacheManager cacheManager;
 
@@ -132,6 +133,18 @@ public class TravelAgentBot implements LongPollingSingleThreadUpdateConsumer {
             createNoteController.enterNoteName(callbackQuery);
         } else if (callbackData.startsWith("note_info_")) {
             createNoteController.sendNoteInfo(callbackQuery);
+        } else if (callbackData.startsWith("change_note_name_") && callbackData.contains("message")) {
+            editNoteController.enterNoteNewName(callbackQuery, true);
+        } else if (callbackData.startsWith("change_note_name_")) {
+            editNoteController.enterNoteNewName(callbackQuery, false);
+        } else if (callbackData.startsWith("delete_note_") && callbackData.contains("message")) {
+            editNoteController.deleteNote(callbackQuery, true);
+        } else if (callbackData.startsWith("delete_note_")) {
+            editNoteController.deleteNote(callbackQuery, false);
+        } else if (callbackData.startsWith("change_note_content_") && callbackData.contains("message")) {
+            editNoteController.enterNoteNewContent(callbackQuery, true);
+        } else if (callbackData.startsWith("change_note_content_")) {
+            editNoteController.enterNoteNewContent(callbackQuery, false);
         }
     }
 
@@ -178,6 +191,8 @@ public class TravelAgentBot implements LongPollingSingleThreadUpdateConsumer {
                 createNoteController.enterNoteContent(message, travelId, messageId);
             }
             case NOTE_CONTENT -> createNoteController.createNote(message, chatStatus.getData());
+            case CHANGE_NOTE_NAME -> editNoteController.changeNoteName(message, chatStatus.getData());
+            case CHANGE_NOTE_CONTENT -> editNoteController.changeNoteContent(message, chatStatus.getData());
         }
     }
 }

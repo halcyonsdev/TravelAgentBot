@@ -36,7 +36,7 @@ public class Note {
     @Column(name = "file_id")
     private String fileId;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "travel_id", referencedColumnName = "id")
     private Travel travel;
 }

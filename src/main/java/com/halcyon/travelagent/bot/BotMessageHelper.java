@@ -372,15 +372,16 @@ public class BotMessageHelper {
 
         switch (note.getType()) {
             case TEXT -> {
-                var noteInfoEditMessage = EditMessageText.builder()
+                deleteMessage(chatId, messageId);
+
+                noteInfoMessage = SendMessage.builder()
                         .chatId(chatId)
-                        .messageId(messageId)
                         .text(getTextNoteInfo(note))
                         .replyMarkup(generateNoteInfoKeyboardMarkup(note.getId(), -1))
                         .build();
-                noteInfoEditMessage.enableMarkdown(true);
+                noteInfoMessage.enableMarkdown(true);
 
-                editMessage(noteInfoEditMessage);
+                sendMessage(noteInfoMessage);
             }
 
             case PHOTO -> {
@@ -441,5 +442,17 @@ public class BotMessageHelper {
                 note.getName(),
                 note.getText(),
                 note.getCreatedAt().atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm")));
+    }
+
+    public void sendTravelNotesMessage(long chatId, int messageId, Travel travel, List<Note> travelNotes) {
+        var travelNotesMessage = EditMessageText.builder()
+                .chatId(chatId)
+                .messageId(messageId)
+                .text(String.format("*Заметки в путешествии \"%s\"*", travel.getName()))
+                .replyMarkup(generateTravelNotesKeyboardMarkup(travelNotes, travel.getId()))
+                .build();
+        travelNotesMessage.enableMarkdown(true);
+
+        editMessage(travelNotesMessage);
     }
 }
