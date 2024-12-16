@@ -48,22 +48,30 @@ public class EditTravelController {
     }
 
     public void enterNewTravelName(CallbackQuery callbackQuery) {
+        long chatId = callbackQuery.getMessage().getChatId();
         long travelId = Long.parseLong(callbackQuery.getData().split("_")[3]);
+
+        botMessageHelper.deleteMessage(chatId, callbackQuery.getMessage().getMessageId());
+        Message sentMessage = botMessageHelper.sendEnterDataMessage(callbackQuery, "название");
 
         cacheManager.saveChatStatus(
                 callbackQuery.getMessage().getChatId(),
                 ChatStatus.builder()
                         .type(ChatStatusType.CHANGE_TRAVEL_NAME)
-                        .data(List.of(String.valueOf(travelId)))
+                        .data(List.of(String.valueOf(travelId), String.valueOf(sentMessage.getMessageId())))
                         .build()
         );
-
-        botMessageHelper.sendEnterDataMessage(callbackQuery, "название");
     }
 
-    public void changeTravelName(Message message, long travelId) {
+    public void changeTravelName(Message message, List<String> cachedData) {
         long chatId = message.getChatId();
         String newTravelName = message.getText();
+
+        long travelId = Long.parseLong(cachedData.get(0));
+        int toDeleteMessageId = Integer.parseInt(cachedData.get(1));
+
+        botMessageHelper.deleteMessage(chatId, toDeleteMessageId);
+        botMessageHelper.deleteMessage(chatId, message.getMessageId());
 
         if (newTravelName.length() > 100) {
             botMessageHelper.sendInvalidDataMessage(
@@ -80,24 +88,32 @@ public class EditTravelController {
     }
 
     public void enterNewTravelDescription(CallbackQuery callbackQuery) {
+        long chatId = callbackQuery.getMessage().getChatId();
         long travelId = Long.parseLong(callbackQuery.getData().split("_")[3]);
 
         travelService.changeDescription(travelId, "отсутствует");
+
+        botMessageHelper.deleteMessage(chatId, callbackQuery.getMessage().getMessageId());
+        Message message = botMessageHelper.sendEnterDataMessage(callbackQuery, "описание");
 
         cacheManager.saveChatStatus(
                 callbackQuery.getMessage().getChatId(),
                 ChatStatus.builder()
                         .type(ChatStatusType.TRAVEL_DESCRIPTION)
-                        .data(List.of(String.valueOf(travelId)))
+                        .data(List.of(String.valueOf(travelId), String.valueOf(message.getMessageId())))
                         .build()
         );
-
-        botMessageHelper.sendEnterDataMessage(callbackQuery, "описание");
     }
 
-    public void changeTravelDescription(Message message, long travelId) {
+    public void changeTravelDescription(Message message, List<String> cachedData) {
         long chatId = message.getChatId();
         String newTravelDescription = message.getText();
+
+        long travelId = Long.parseLong(cachedData.get(0));
+        int toDeleteMessageId = Integer.parseInt(cachedData.get(1));
+
+        botMessageHelper.deleteMessage(chatId, toDeleteMessageId);
+        botMessageHelper.deleteMessage(chatId, message.getMessageId());
 
         if (newTravelDescription.length() > 500) {
             botMessageHelper.sendInvalidDataMessage(

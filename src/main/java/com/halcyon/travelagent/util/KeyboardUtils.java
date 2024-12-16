@@ -246,23 +246,23 @@ public class KeyboardUtils {
         return new InlineKeyboardMarkup(keyboard);
     }
 
-    public static InlineKeyboardMarkup generateRouteInfoInlineKeyboard(long routeId) {
+    public static InlineKeyboardMarkup generateRouteInfoInlineKeyboard(long routeId, int messageId) {
         return InlineKeyboardMarkup.builder()
                 .keyboard(List.of(
                         new InlineKeyboardRow(InlineKeyboardButton.builder()
                                 .text("✍️ Изменить название")
-                                .callbackData("change_route_name_" + routeId)
+                                .callbackData(String.format("change_route_name_%s_message_%s", routeId, messageId))
                                 .build()),
                         new InlineKeyboardRow(InlineKeyboardButton.builder()
-                                .callbackData("add_point_route_" + routeId)
+                                .callbackData(String.format("add_route_point_%s_message_%s", routeId, messageId))
                                 .text("\uD83D\uDCE5 Добавить точку")
                                 .build()),
                         new InlineKeyboardRow(InlineKeyboardButton.builder()
-                                .callbackData("delete_route_point_" + routeId)
+                                .callbackData(String.format("delete_route_point_%s_message_%s", routeId, messageId))
                                 .text("❌ Удалить точку")
                                 .build()),
                         new InlineKeyboardRow(InlineKeyboardButton.builder()
-                                .callbackData("delete_route_" + routeId)
+                                .callbackData(String.format("delete_route_%s_message_%s", routeId, messageId))
                                 .text("\uD83D\uDDD1 Удалить")
                                 .build()),
                         new InlineKeyboardRow(getBackButton())

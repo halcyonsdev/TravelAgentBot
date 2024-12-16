@@ -20,6 +20,7 @@ import org.telegram.telegrambots.meta.api.objects.InputFile;
 import org.telegram.telegrambots.meta.api.objects.message.Message;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -36,11 +37,15 @@ public class EditRouteController {
 
     public void sendChoosePointLocationMessage(CallbackQuery callbackQuery) {
         long chatId = callbackQuery.getMessage().getChatId();
-        long routeId = Long.parseLong(callbackQuery.getData().split("_")[3]);
+        String[] callbackData = callbackQuery.getData().split("_");
+        long routeId = Long.parseLong(callbackData[3]);
 
         if (routeService.getRoutePointsCount(routeId) >= 10) {
             sendExceededLimitMessage(chatId);
         }
+
+        int toDeleteMessageId = Integer.parseInt(callbackData[5]);
+        botMessageHelper.deleteMessage(chatId, toDeleteMessageId);
 
         Route route = routeService.findById(routeId);
         List<Location> travelLocations = locationService.getTravelLocations(route.getTravel().getId());
@@ -163,13 +168,15 @@ public class EditRouteController {
             route = routeService.addNewStartRoutePoint(routeId, newPointName, routeImageUrl);
         }
 
+        botMessageHelper.deleteMessage(chatId, callbackQuery.getMessage().getMessageId());
         botMessageHelper.sendRoute(chatId, routeImageFileOptional.get(), route);
         cacheManager.remove(String.valueOf(chatId));
     }
 
     public void sendEnterNewRouteNameMessage(CallbackQuery callbackQuery) {
         long chatId = callbackQuery.getMessage().getChatId();
-        long routeId = Long.parseLong(callbackQuery.getData().split("_")[3]);
+        String[] callbackData = callbackQuery.getData().split("_");
+        long routeId = Long.parseLong(callbackData[3]);
 
         var enterNewNameMessage = SendMessage.builder()
                 .chatId(chatId)
@@ -177,24 +184,35 @@ public class EditRouteController {
                 .build();
         enterNewNameMessage.enableMarkdown(true);
 
-        botMessageHelper.sendMessage(enterNewNameMessage);
+        botMessageHelper.deleteMessage(chatId, callbackQuery.getMessage().getMessageId());
+
+        int toDeleteMessageId = Integer.parseInt(callbackData[5]);
+        botMessageHelper.deleteMessage(chatId, toDeleteMessageId);
+
+        Message sentMessage = botMessageHelper.sendMessage(enterNewNameMessage);
 
         cacheManager.saveChatStatus(
                 chatId,
                 ChatStatus.builder()
                         .type(ChatStatusType.CHANGE_ROUTE_NAME)
-                        .data(List.of(String.valueOf(routeId)))
+                        .data(List.of(String.valueOf(routeId), String.valueOf(sentMessage.getMessageId())))
                         .build()
         );
     }
 
-    public void changeRouteName(Message message, long routeId) {
+    public void changeRouteName(Message message, List<String> cachedData) {
         long chatId = message.getChatId();
 
         if (message.getText().length() > 100) {
             botMessageHelper.sendInvalidRouteNameMessage(chatId);
             return;
         }
+
+        long routeId = Long.parseLong(cachedData.get(0));
+        int toDeleteMessageId = Integer.parseInt(cachedData.get(1));
+
+        botMessageHelper.deleteMessage(chatId, toDeleteMessageId);
+        botMessageHelper.deleteMessage(chatId, message.getMessageId());
 
         Route route = routeService.changeName(routeId, message.getText());
         Optional<InputFile> routeImageFileOptional = geoapifyAPI.getRouteImageFile(route.getApiMapUrl());
@@ -210,13 +228,17 @@ public class EditRouteController {
 
     public void choosePointForDeleting(CallbackQuery callbackQuery) {
         long chatId = callbackQuery.getMessage().getChatId();
-        long routeId = Long.parseLong(callbackQuery.getData().split("_")[3]);
+        String[] callbackData = callbackQuery.getData().split("_");
+        long routeId = Long.parseLong(callbackData[3]);
         Route route = routeService.findById(routeId);
 
         if (route.getSize() == 2) {
             sendCannotDeletePointMessage(chatId);
             return;
         }
+
+        int toDeleteMessageId = Integer.parseInt(callbackData[5]);
+        botMessageHelper.deleteMessage(chatId, toDeleteMessageId);
 
         StringBuilder routePointsText = new StringBuilder("*Выбери точку, которую хочешь удалить:*\n\n");
         RoutePoint currentPoint = route.getStartPoint();
@@ -260,7 +282,8 @@ public class EditRouteController {
 
     public void deleteRoutePoint(CallbackQuery callbackQuery) {
         long chatId = callbackQuery.getMessage().getChatId();
-        long routePointId = Long.parseLong(callbackQuery.getData().split("_")[3]);
+        String[] callbackData = callbackQuery.getData().split("_");
+        long routePointId = Long.parseLong(callbackData[3]);
         Optional<ChatStatus> cacheDataOptional = cacheManager.fetch(String.valueOf(chatId), ChatStatus.class);
 
         if (cacheDataOptional.isEmpty()) {
@@ -290,16 +313,22 @@ public class EditRouteController {
 
         route = routeService.deleteRoutePoint(route, routePointId, routeImageUrl);
 
+        botMessageHelper.deleteMessage(chatId, callbackQuery.getMessage().getMessageId());
         botMessageHelper.sendRoute(chatId, routeImageFileOptional.get(), route);
         cacheManager.remove(String.valueOf(chatId));
     }
 
     public void deleteRoute(CallbackQuery callbackQuery) {
         var message = callbackQuery.getMessage();
-        long routeId = Long.parseLong(callbackQuery.getData().split("_")[2]);
+        String[] callbackData = callbackQuery.getData().split("_");
+        long routeId = Long.parseLong(callbackData[2]);
         Travel travel = routeService.deleteRouteAndGetTravel(routeId);
 
         List<Route> travelRoutes = routeService.getTravelRoutes(travel.getId());
+
+        int toDeleteMessageId = Integer.parseInt(callbackData[4]);
+        botMessageHelper.deleteMessage(message.getChatId(), toDeleteMessageId);
+
         botMessageHelper.sendTravelRoutesMessage(message.getChatId(), message.getMessageId(), travel, travelRoutes);
     }
 }

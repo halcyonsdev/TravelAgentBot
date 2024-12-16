@@ -141,25 +141,25 @@ public class BotMessageHelper {
         sendMessage(errorMessage);
     }
 
-    public void sendEnterDataMessage(CallbackQuery callbackQuery, String data) {
+    public Message sendEnterDataMessage(CallbackQuery callbackQuery, String data) {
         var message = SendMessage.builder()
                 .chatId(callbackQuery.getMessage().getChatId())
                 .text("Пожалуйста, введите " + data + " для путешествия")
                 .build();
 
-        sendMessage(message);
+        return sendMessage(message);
     }
 
-    public void sendEnterCityMessage(long chatId, boolean isForChange) {
+    public Message sendEnterCityMessage(long chatId, boolean isForChange) {
         var enterCityMessage = SendMessage.builder()
                 .chatId(chatId)
                 .text("Пожалуйста, введите " + (isForChange ? "новое " : "") + "название города, который хотите посетить")
                 .build();
 
-        sendMessage(enterCityMessage);
+        return sendMessage(enterCityMessage);
     }
 
-    public void sendEnterTimeMessage(long chatId, boolean isStart, boolean isForChange) {
+    public Message sendEnterTimeMessage(long chatId, boolean isStart, boolean isForChange) {
         String text = String.format(
                 "Пожалуйста, введите%s время %s (в формате %s)",
                 (isForChange ? " новое" : ""),
@@ -172,7 +172,7 @@ public class BotMessageHelper {
                 .text(text)
                 .build();
 
-        sendMessage(enterTimeMessage);
+        return sendMessage(enterTimeMessage);
     }
 
     public void sendErrorTimeMessage(long chatId, boolean isStart, boolean isForChange) {
@@ -315,14 +315,15 @@ public class BotMessageHelper {
                 .photo(routeImage)
                 .build();
 
+        Message sentPhoto = sendPhoto(routePhoto);
+
         var routeInfoMessage = SendMessage.builder()
                 .chatId(chatId)
                 .text(getRouteInfo(route))
-                .replyMarkup(generateRouteInfoInlineKeyboard(route.getId()))
+                .replyMarkup(generateRouteInfoInlineKeyboard(route.getId(), sentPhoto.getMessageId()))
                 .build();
         routeInfoMessage.enableMarkdown(true);
 
-        sendPhoto(routePhoto);
         sendMessage(routeInfoMessage);
     }
 

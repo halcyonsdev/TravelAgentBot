@@ -25,19 +25,23 @@ public class CreateTravelController {
     private final BotMessageHelper botMessageHelper;
 
     public void enterTravelName(CallbackQuery callbackQuery) {
+        long chatId = callbackQuery.getMessage().getChatId();
+
         if (travelService.getUserTravelsCount(callbackQuery.getFrom().getId()) >= 10) {
             sendExceededLimitMessage(callbackQuery.getFrom().getId());
             return;
         }
 
+        botMessageHelper.deleteMessage(chatId, callbackQuery.getMessage().getMessageId());
+        Message sentMessage = botMessageHelper.sendEnterDataMessage(callbackQuery, "название");
+
         cacheManager.saveChatStatus(
-                callbackQuery.getMessage().getChatId(),
+                chatId,
                 ChatStatus.builder()
                         .type(ChatStatusType.TRAVEL_NAME)
+                        .data(List.of(String.valueOf(sentMessage.getMessageId())))
                         .build()
         );
-
-        botMessageHelper.sendEnterDataMessage(callbackQuery, "название");
     }
 
     private void sendExceededLimitMessage(long chatId) {
@@ -54,10 +58,13 @@ public class CreateTravelController {
         botMessageHelper.editMessageToUserTravels(chatId, messageId, userTravels);
     }
 
-    public void createTravel(Message message) {
+    public void createTravel(Message message, List<String> cachedData) {
         long userId = message.getFrom().getId();
         long chatId = message.getChatId();
         String travelName = message.getText();
+
+        botMessageHelper.deleteMessage(chatId, Integer.parseInt(cachedData.get(0)));
+        botMessageHelper.deleteMessage(chatId, message.getMessageId());
 
         if (travelName.length() > 100) {
             botMessageHelper.sendInvalidDataMessage(
@@ -66,10 +73,10 @@ public class CreateTravelController {
             );
         } else {
             travelService.createTravel(travelName, userId);
-            cacheManager.remove(String.valueOf(chatId));
-
             List<Travel> userTravels = travelService.getUserTravels(userId);
+
             botMessageHelper.sendUserTravelsMessage(chatId, userTravels);
+            cacheManager.remove(String.valueOf(chatId));
         }
     }
 

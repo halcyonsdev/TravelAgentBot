@@ -98,9 +98,10 @@ public class CreateRouteController {
 
         String text = botMessageHelper.getTravelLocationsText(locations);
 
+        int messageId = callbackQuery.getMessage().getMessageId();
         var destinationLocationsMessage = EditMessageText.builder()
                 .chatId(chatId)
-                .messageId(callbackQuery.getMessage().getMessageId())
+                .messageId(messageId)
                 .text("*Выберите конечную точку маршрута:*\n\n" + text)
                 .replyMarkup(generateDestinationPointChoiceKeyboardMarkup(locations))
                 .build();
@@ -117,7 +118,7 @@ public class CreateRouteController {
                 chatId,
                 ChatStatus.builder()
                         .type(ChatStatusType.ROUTE_DESTINATION_POINT)
-                        .data(List.of(String.valueOf(travelId), startPointName))
+                        .data(List.of(String.valueOf(travelId), startPointName, String.valueOf(messageId)))
                         .build()
         );
     }
@@ -126,16 +127,26 @@ public class CreateRouteController {
         long chatId = callbackQuery.getMessage().getChatId();
         String destinationLocationId = callbackQuery.getData().split("_")[3];
 
-        Location destinationLocation = locationService.findById(Long.parseLong(destinationLocationId));
+        Optional<ChatStatus> chatStatusOptional = cacheManager.fetch(String.valueOf(chatId), ChatStatus.class);
 
-        List<String> cacheData = cacheManager.fetch(String.valueOf(chatId), ChatStatus.class).get().getData();
+        if (chatStatusOptional.isEmpty()) {
+            botMessageHelper.sendErrorMessage(chatId);
+            return;
+        }
+
+        List<String> cachedData = chatStatusOptional.get().getData();
+
+        botMessageHelper.deleteMessage(chatId, callbackQuery.getMessage().getMessageId());
+        botMessageHelper.deleteMessage(chatId, Integer.parseInt(cachedData.get(2)));
+
+        Location destinationLocation = locationService.findById(Long.parseLong(destinationLocationId));
 
         var enterRouteNameMessage = SendMessage.builder()
                 .chatId(chatId)
                 .text("Теперь введите название для маршрута")
                 .build();
 
-        botMessageHelper.sendMessage(enterRouteNameMessage);
+        Message sentMessage = botMessageHelper.sendMessage(enterRouteNameMessage);
 
         String destinationPointName = destinationLocation.getName();
         if (!destinationLocation.getStreet().equals("отсутствует")) {
@@ -146,21 +157,26 @@ public class CreateRouteController {
                 chatId,
                 ChatStatus.builder()
                         .type(ChatStatusType.ROUTE_NAME)
-                        .data(List.of(cacheData.get(0), cacheData.get(1), destinationPointName))
+                        .data(List.of(cachedData.get(0), cachedData.get(1), destinationPointName, String.valueOf(sentMessage.getMessageId())))
                         .build()
         );
     }
 
-    public void createRoute(Message message, List<String> cacheData) {
+    public void createRoute(Message message, List<String> cachedData) {
         long chatId = message.getChatId();
-        long travelId = Long.parseLong(cacheData.get(0));
-        String startPointName = cacheData.get(1);
-        String destinationPointName = cacheData.get(2);
 
         if (message.getText().length() > 100) {
             botMessageHelper.sendInvalidRouteNameMessage(chatId);
             return;
         }
+
+        long travelId = Long.parseLong(cachedData.get(0));
+        String startPointName = cachedData.get(1);
+        String destinationPointName = cachedData.get(2);
+        int toDeleteMessageId = Integer.parseInt(cachedData.get(3));
+
+        botMessageHelper.deleteMessage(chatId, toDeleteMessageId);
+        botMessageHelper.deleteMessage(chatId, message.getMessageId());
 
         try {
             Optional<String> routeImageUrlOptional = geoapifyAPI.getNewRouteImageUrl(startPointName, destinationPointName);
@@ -210,6 +226,7 @@ public class CreateRouteController {
             return;
         }
 
+        botMessageHelper.deleteMessage(chatId, callbackQuery.getMessage().getMessageId());
         botMessageHelper.sendRoute(chatId, routeImageOptional.get(), route);
     }
 }

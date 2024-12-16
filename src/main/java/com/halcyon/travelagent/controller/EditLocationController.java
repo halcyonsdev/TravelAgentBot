@@ -38,20 +38,26 @@ public class EditLocationController {
         long chatId = callbackQuery.getMessage().getChatId();
         String locationId = callbackQuery.getData().split("_")[3];
 
-        botMessageHelper.sendEnterCityMessage(chatId, true);
+        Message sentMessage = botMessageHelper.sendEnterCityMessage(chatId, true);
 
         cacheManager.saveChatStatus(
                 chatId,
                 ChatStatus.builder()
                         .type(ChatStatusType.CHANGE_LOCATION_CITY)
-                        .data(List.of(locationId))
+                        .data(List.of(locationId, String.valueOf(sentMessage.getMessageId())))
                         .build()
         );
     }
 
-    public void changeLocationName(Message message, long locationId) {
+    public void changeLocationName(Message message, List<String> cachedData) {
         long chatId = message.getChatId();
         Optional<List<String>> locationsOptional = geoapifyAPI.getLocations(message.getText());
+
+        long locationId = Long.parseLong(cachedData.get(0));
+        int toDeleteMessageId = Integer.parseInt(cachedData.get(1));
+
+        botMessageHelper.deleteMessage(chatId, toDeleteMessageId);
+        botMessageHelper.deleteMessage(chatId, message.getMessageId());
 
         if (locationsOptional.isPresent()) {
             List<String> locations = locationsOptional.get();
@@ -87,28 +93,36 @@ public class EditLocationController {
         long chatId = callbackQuery.getMessage().getChatId();
         String locationId = callbackQuery.getData().split("_")[3];
 
-        sendEnterStreetMessage(chatId);
+        botMessageHelper.deleteMessage(chatId, callbackQuery.getMessage().getMessageId());
+        Message sentMessage = sendEnterStreetMessage(chatId);
 
         cacheManager.saveChatStatus(
                 chatId,
                 ChatStatus.builder()
                         .type(ChatStatusType.LOCATION_STREET)
-                        .data(List.of(locationId))
+                        .data(List.of(locationId, String.valueOf(sentMessage.getMessageId())))
                         .build()
         );
     }
 
-    private void sendEnterStreetMessage(long chatId) {
+    private Message sendEnterStreetMessage(long chatId) {
         var enterStreetMessage = SendMessage.builder()
                 .chatId(chatId)
                 .text("Пожалуйста, введите название улицы")
                 .build();
 
-        botMessageHelper.sendMessage(enterStreetMessage);
+        return botMessageHelper.sendMessage(enterStreetMessage);
     }
 
-    public void changeLocationStreet(Message message, long locationId) {
+    public void changeLocationStreet(Message message, List<String> cachedData) {
         long chatId = message.getChatId();
+
+        long locationId = Long.parseLong(cachedData.get(0));
+        int toDeleteMessageId = Integer.parseInt(cachedData.get(1));
+
+        botMessageHelper.deleteMessage(chatId, toDeleteMessageId);
+        botMessageHelper.deleteMessage(chatId, message.getMessageId());
+
         Location location = locationService.findById(locationId);
         Optional<String> streetOptional = geoapifyAPI.getStreet(message.getText(), location.getName());
 
@@ -119,27 +133,54 @@ public class EditLocationController {
             botMessageHelper.sendLocationInfoMessage(chatId, location);
             cacheManager.remove(String.valueOf(chatId));
         } else {
-            sendEnterStreetMessage(chatId);
+            sendCorrectStreetMessage(chatId, cachedData);
         }
+    }
+
+    private void sendCorrectStreetMessage(long chatId, List<String> data) {
+        var enterStreetMessage = SendMessage.builder()
+                .chatId(chatId)
+                .text("Улица с таким названием не найдена. Пожалуйста, введите корректную улицу")
+                .build();
+
+        Message sentMessage = botMessageHelper.sendMessage(enterStreetMessage);
+
+        data.remove(1);
+        data.add(String.valueOf(sentMessage.getMessageId()));
+
+        cacheManager.saveChatStatus(
+                chatId,
+                ChatStatus.builder()
+                        .type(ChatStatusType.LOCATION_STREET)
+                        .data(data)
+                        .build()
+        );
     }
 
     public void enterNewLocationTime(CallbackQuery callbackQuery, boolean isStart) {
         long chatId = callbackQuery.getMessage().getChatId();
         String locationId = callbackQuery.getData().split("_")[3];
 
-        botMessageHelper.sendEnterTimeMessage(chatId, isStart, true);
+        botMessageHelper.deleteMessage(chatId, callbackQuery.getMessage().getMessageId());
+        Message sentMessage = botMessageHelper.sendEnterTimeMessage(chatId, isStart, true);
 
         cacheManager.saveChatStatus(
                 chatId,
                 ChatStatus.builder()
                         .type(isStart ? ChatStatusType.CHANGE_LOCATION_START_TIME : ChatStatusType.CHANGE_LOCATION_END_TIME)
-                        .data(List.of(locationId))
+                        .data(List.of(locationId, String.valueOf(sentMessage.getMessageId())))
                         .build()
         );
     }
 
-    public void changeLocationTime(Message message, long locationId, boolean isStart) {
+    public void changeLocationTime(Message message, List<String> cachedData, boolean isStart) {
         long chatId = message.getChatId();
+
+        long locationId = Long.parseLong(cachedData.get(0));
+        int toDeleteMessageId = Integer.parseInt(cachedData.get(1));
+
+        botMessageHelper.deleteMessage(chatId, toDeleteMessageId);
+        botMessageHelper.deleteMessage(chatId, message.getMessageId());
 
         try {
             LocalDateTime localDateTime = LocalDateTime.parse(message.getText(), DateTimeFormatter.ofPattern(DATE_PATTERN));

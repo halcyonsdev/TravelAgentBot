@@ -11,6 +11,7 @@ import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.message.Message;
 
+import java.util.List;
 import java.util.Optional;
 
 @Slf4j
@@ -114,7 +115,7 @@ public class TravelAgentBot implements LongPollingSingleThreadUpdateConsumer {
             editRouteController.choosePointForDeleting(callbackQuery);
         } else if (callbackData.startsWith("delete_route_")) {
             editRouteController.deleteRoute(callbackQuery);
-        } else if (callbackData.startsWith("add_point_route_")) {
+        } else if (callbackData.startsWith("add_route_point_")) {
             editRouteController.sendChoosePointLocationMessage(callbackQuery);
         } else if (callbackData.startsWith("add_point_location_")) {
             editRouteController.choosePointLocation(callbackQuery);
@@ -156,33 +157,24 @@ public class TravelAgentBot implements LongPollingSingleThreadUpdateConsumer {
         }
 
         ChatStatus chatStatus = chatStatusOptional.get();
+        List<String> cachedData = chatStatus.getData();
 
         switch (chatStatus.getType()) {
-            case TRAVEL_NAME -> createTravelController.createTravel(message);
-            case TRAVEL_DESCRIPTION -> editTravelController.changeTravelDescription(message, Long.parseLong(chatStatus.getData().get(0)));
-            case CHANGE_TRAVEL_NAME -> editTravelController.changeTravelName(message, Long.parseLong(chatStatus.getData().get(0)));
+            case TRAVEL_NAME -> createTravelController.createTravel(message, cachedData);
+            case TRAVEL_DESCRIPTION -> editTravelController.changeTravelDescription(message, cachedData);
+            case CHANGE_TRAVEL_NAME -> editTravelController.changeTravelName(message, cachedData);
 
-            case LOCATION_CITY -> createLocationController.createLocation(message, Long.parseLong(chatStatus.getData().get(0)));
-            case LOCATION_STREET -> editLocationController.changeLocationStreet(message, Long.parseLong(chatStatus.getData().get(0)));
-            case LOCATION_START_TIME -> {
-                long travelId = Long.parseLong(chatStatus.getData().get(0));
-                String locationName = chatStatus.getData().get(1);
+            case LOCATION_CITY -> createLocationController.createLocation(message, cachedData);
+            case LOCATION_STREET -> editLocationController.changeLocationStreet(message, cachedData);
+            case LOCATION_START_TIME -> createLocationController.setLocationStartTime(message, cachedData);
+            case LOCATION_END_TIME -> createLocationController.setLocationEndTime(message, cachedData);
 
-                createLocationController.setLocationStartTime(message, travelId, locationName);
-            }
-            case LOCATION_END_TIME -> {
-                long travelId = Long.parseLong(chatStatus.getData().get(0));
-                String locationName = chatStatus.getData().get(1);
-                String locationStartTime = chatStatus.getData().get(2);
+            case CHANGE_LOCATION_CITY -> editLocationController.changeLocationName(message, cachedData);
+            case CHANGE_LOCATION_START_TIME -> editLocationController.changeLocationTime(message, cachedData, true);
+            case CHANGE_LOCATION_END_TIME -> editLocationController.changeLocationTime(message, cachedData, false);
 
-                createLocationController.setLocationEndTime(message, travelId, locationName, locationStartTime);
-            }
-            case CHANGE_LOCATION_CITY -> editLocationController.changeLocationName(message, Long.parseLong(chatStatus.getData().get(0)));
-            case CHANGE_LOCATION_START_TIME -> editLocationController.changeLocationTime(message, Long.parseLong(chatStatus.getData().get(0)), true);
-            case CHANGE_LOCATION_END_TIME -> editLocationController.changeLocationTime(message, Long.parseLong(chatStatus.getData().get(0)), false);
-
-            case ROUTE_NAME -> createRouteController.createRoute(message, chatStatus.getData());
-            case CHANGE_ROUTE_NAME -> editRouteController.changeRouteName(message, Long.parseLong(chatStatus.getData().get(0)));
+            case ROUTE_NAME -> createRouteController.createRoute(message, cachedData);
+            case CHANGE_ROUTE_NAME -> editRouteController.changeRouteName(message, cachedData);
 
             case NOTE_NAME -> {
                 String travelId = chatStatus.getData().get(0);

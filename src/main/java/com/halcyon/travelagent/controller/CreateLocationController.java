@@ -18,6 +18,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -40,13 +41,14 @@ public class CreateLocationController {
             return;
         }
 
-        botMessageHelper.sendEnterCityMessage(chatId, false);
+        botMessageHelper.deleteMessage(chatId, callbackQuery.getMessage().getMessageId());
+        Message sentMessage = botMessageHelper.sendEnterCityMessage(chatId, false);
 
         cacheManager.saveChatStatus(
                 chatId,
                 ChatStatus.builder()
                         .type(ChatStatusType.LOCATION_CITY)
-                        .data(List.of(String.valueOf(travelId)))
+                        .data(List.of(String.valueOf(travelId), String.valueOf(sentMessage.getMessageId())))
                         .build()
         );
     }
@@ -60,15 +62,25 @@ public class CreateLocationController {
         botMessageHelper.sendMessage(exceededLimitMessage);
     }
 
-    public void createLocation(Message message, long travelId) {
+    public void createLocation(Message message, List<String> cachedData) {
         long chatId = message.getChatId();
         Optional<List<String>> locationsOptional = geoapifyAPI.getLocations(message.getText());
+
+        long travelId = Long.parseLong(cachedData.get(0));
+        int toDeleteMessageId = Integer.parseInt(cachedData.get(1));
+
+        botMessageHelper.deleteMessage(chatId, toDeleteMessageId);
+        botMessageHelper.deleteMessage(chatId, message.getMessageId());
 
         if (locationsOptional.isPresent()) {
             List<String> locations = locationsOptional.get();
 
+            List<String> data = new ArrayList<>();
+            data.add(String.valueOf(travelId));
+            data.add(locations.get(0));
+
             if (locations.size() == 1) {
-                enterTime(chatId, List.of(String.valueOf(travelId), locations.get(0)), true);
+                enterTime(chatId, data, true);
             } else {
                 getChoiceOfLocations(chatId, travelId, locations);
             }
@@ -78,6 +90,9 @@ public class CreateLocationController {
     }
 
     public void enterTime(long chatId, List<String> data, boolean isStart) {
+        Message sentMessage = botMessageHelper.sendEnterTimeMessage(chatId, isStart, false);
+        data.add(String.valueOf(sentMessage.getMessageId()));
+
         cacheManager.saveChatStatus(
                 chatId,
                 ChatStatus.builder()
@@ -85,26 +100,43 @@ public class CreateLocationController {
                         .data(data)
                         .build()
         );
-
-        botMessageHelper.sendEnterTimeMessage(chatId, isStart, false);
     }
 
-    public void setLocationStartTime(Message message, long travelId, String locationName) {
+    public void setLocationStartTime(Message message, List<String> cachedData) {
         long chatId = message.getChatId();
+
+        long travelId = Long.parseLong(cachedData.get(0));
+        String locationName = cachedData.get(1);
+        int toDeleteMessageId = Integer.parseInt(cachedData.get(2));
+
+        botMessageHelper.deleteMessage(chatId, toDeleteMessageId);
+        botMessageHelper.deleteMessage(chatId, message.getMessageId());
 
         try {
             LocalDateTime localDateTime = LocalDateTime.parse(message.getText(), DateTimeFormatter.ofPattern(DATE_PATTERN));
             localDateTime.atZone(ZoneId.systemDefault()).toInstant();
 
-            List<String> data = List.of(String.valueOf(travelId), locationName, message.getText());
+            List<String> data = new ArrayList<>();
+            data.add(String.valueOf(travelId));
+            data.add(locationName);
+            data.add(message.getText());
+
             enterTime(chatId, data, false);
         } catch (DateTimeParseException e) {
             botMessageHelper.sendErrorTimeMessage(chatId, true, false);
         }
     }
 
-    public void setLocationEndTime(Message message, long travelId, String locationName, String locationStartTime) {
+    public void setLocationEndTime(Message message, List<String> cachedData) {
         long chatId = message.getChatId();
+
+        long travelId = Long.parseLong(cachedData.get(0));
+        String locationName = cachedData.get(1);
+        String locationStartTime = cachedData.get(2);
+        int toDeleteMessageId = Integer.parseInt(cachedData.get(3));
+
+        botMessageHelper.deleteMessage(chatId, toDeleteMessageId);
+        botMessageHelper.deleteMessage(chatId, message.getMessageId());
 
         try {
             DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(DATE_PATTERN);
@@ -116,16 +148,16 @@ public class CreateLocationController {
             Instant startTime = startDateTime.atZone(ZoneId.systemDefault()).toInstant();
 
             Location location = locationService.createLocation(locationName, startTime, endTime, travelId);
-            cacheManager.remove(String.valueOf(chatId));
 
             botMessageHelper.sendLocationInfoMessage(chatId, location);
+            cacheManager.remove(String.valueOf(chatId));
         } catch (DateTimeParseException e) {
             botMessageHelper.sendErrorTimeMessage(chatId, false, false);
         }
     }
 
     private void getChoiceOfLocations(long chatId, long travelId, List<String> locations) {
-        botMessageHelper.sendChoiceOfLocationsMessage(chatId, locations);
+       botMessageHelper.sendChoiceOfLocationsMessage(chatId, locations);
 
         cacheManager.saveChatStatus(
                 chatId,
@@ -141,20 +173,34 @@ public class CreateLocationController {
         String cachedLocationId = "location:" + callbackQuery.getData().split("_")[2];
         Optional<String> locationNameOptional = cacheManager.fetch(cachedLocationId, String.class);
 
-        ChatStatus chatStatus = cacheManager.fetch(String.valueOf(chatId), ChatStatus.class).get();
-        List<String> cacheData = chatStatus.getData();
+        Optional<ChatStatus> chatStatusOptional = cacheManager.fetch(String.valueOf(chatId), ChatStatus.class);
+
+        if (chatStatusOptional.isEmpty()) {
+            botMessageHelper.sendErrorMessage(chatId);
+            return;
+        }
+
+        ChatStatus chatStatus = chatStatusOptional.get();
+        List<String> cachedData = chatStatus.getData();
+
+        botMessageHelper.deleteMessage(chatId, callbackQuery.getMessage().getMessageId());
 
         if (locationNameOptional.isEmpty()) {
             sendExpiredOperationMessage(chatId);
         } else if (chatStatus.getType() == ChatStatusType.CHANGE_LOCATION_CITY) {
-            long locationId = Long.parseLong(cacheData.get(0));
+            long locationId = Long.parseLong(cachedData.get(0));
             Location location = locationService.changeName(locationId, locationNameOptional.get());
 
             botMessageHelper.sendLocationInfoMessage(chatId, location);
             cacheManager.remove(String.valueOf(chatId));
         } else {
-            long travelId = Long.parseLong(cacheData.get(0));
-            enterTime(chatId, List.of(String.valueOf(travelId), locationNameOptional.get()), true);
+            long travelId = Long.parseLong(cachedData.get(0));
+
+            List<String> data = new ArrayList<>();
+            data.add(String.valueOf(travelId));
+            data.add(locationNameOptional.get());
+
+            enterTime(chatId, data, true);
         }
     }
 
