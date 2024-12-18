@@ -21,5 +21,6 @@ public enum ChatStatusType {
     NOTE_NAME,
     NOTE_CONTENT,
     CHANGE_NOTE_NAME,
-    CHANGE_NOTE_CONTENT
+    CHANGE_NOTE_CONTENT,
+    WEATHER_CITY
 }

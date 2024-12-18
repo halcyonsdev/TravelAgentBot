@@ -14,4 +14,8 @@ public class Credentials {
     public static String getGeoapifyApiKey() {
         return dotenv.get("GEOAPIFY_API_KEY");
     }
+
+    public static String getOpenWeatherMapApiKey() {
+        return dotenv.get("OPEN_WEATHER_MAP_API_KEY");
+    }
 }

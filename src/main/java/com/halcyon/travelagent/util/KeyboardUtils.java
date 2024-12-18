@@ -21,8 +21,8 @@ public class KeyboardUtils {
                                 .callbackData("get_travels")
                                 .build()),
                         new InlineKeyboardRow(InlineKeyboardButton.builder()
-                                .text("\uD83D\uDD28 Создать путешествие")
-                                .callbackData("create_travel")
+                                .text("⛅️ Погода")
+                                .callbackData("get_weather")
                                 .build())
                         )).build();
     }
@@ -46,11 +46,16 @@ public class KeyboardUtils {
         }
 
         if (!currentRow.isEmpty()) {
-            currentRow.add(getBackButton());
             keyboard.add(currentRow);
-        } else {
-            keyboard.add(new InlineKeyboardRow(getBackButton()));
         }
+
+        var createTravelButton = InlineKeyboardButton.builder()
+                .text("\uD83D\uDD28 Создать путешествие")
+                .callbackData("create_travel")
+                .build();
+
+        keyboard.add(new InlineKeyboardRow(createTravelButton));
+        keyboard.add(new InlineKeyboardRow(getBackButton()));
 
         return new InlineKeyboardMarkup(keyboard);
     }
@@ -367,5 +372,35 @@ public class KeyboardUtils {
                         new InlineKeyboardRow(messageId != -1 ? getBackWithDeleteButton(messageId) : getBackButton())
                 ))
                 .build();
+    }
+
+    public static InlineKeyboardMarkup generateWeatherInfoKeyboardMarkup(String city, int order) {
+        List<InlineKeyboardRow> keyboard = new ArrayList<>();
+        InlineKeyboardRow currentRow = new InlineKeyboardRow();
+
+        if (order - 3 >= 0) {
+            currentRow.add(InlineKeyboardButton.builder()
+                    .text("⬅️ Назад")
+                    .callbackData(String.format("go_back_%s_%s", city, order - 3))
+                    .build());
+        }
+
+        if (order + 3 <= 39) {
+            currentRow.add(InlineKeyboardButton.builder()
+                    .text("➡️ Вперед")
+                    .callbackData(String.format("go_forward_%s_%s", city, order + 3))
+                    .build());
+        }
+
+        keyboard.add(currentRow);
+
+        var returnButton = InlineKeyboardButton.builder()
+                .text("↩️ Вернуться")
+                .callbackData("back")
+                .build();
+
+        keyboard.add(new InlineKeyboardRow(returnButton));
+
+        return new InlineKeyboardMarkup(keyboard);
     }
 }

@@ -19,6 +19,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class TravelAgentBot implements LongPollingSingleThreadUpdateConsumer {
     private final CommandController commandController;
+    private final WeatherController weatherController;
 
     private final CreateTravelController createTravelController;
     private final CreateLocationController createLocationController;
@@ -62,6 +63,8 @@ public class TravelAgentBot implements LongPollingSingleThreadUpdateConsumer {
         switch (callbackData) {
             case "get_travels" -> createTravelController.editMessageToUserTravels(callbackQuery.getFrom().getId(), callbackQuery.getMessage().getChatId(), callbackQuery.getMessage().getMessageId());
             case "create_travel" -> createTravelController.enterTravelName(callbackQuery);
+
+            case "get_weather" -> weatherController.enterWeatherCity(callbackQuery);
 
             case "back" -> commandController.handleBackCommand(callbackQuery);
 
@@ -146,6 +149,10 @@ public class TravelAgentBot implements LongPollingSingleThreadUpdateConsumer {
             editNoteController.enterNoteNewContent(callbackQuery, true);
         } else if (callbackData.startsWith("change_note_content_")) {
             editNoteController.enterNoteNewContent(callbackQuery, false);
+        } else if (callbackData.startsWith("go_back_")) {
+            weatherController.goInWeatherOrder(callbackQuery, callbackData.split("_")[2], Integer.parseInt(callbackData.split("_")[3]));
+        } else if (callbackData.startsWith("go_forward_")) {
+            weatherController.goInWeatherOrder(callbackQuery, callbackData.split("_")[2], Integer.parseInt(callbackData.split("_")[3]));
         }
     }
 
@@ -185,6 +192,8 @@ public class TravelAgentBot implements LongPollingSingleThreadUpdateConsumer {
             case NOTE_CONTENT -> createNoteController.createNote(message, chatStatus.getData());
             case CHANGE_NOTE_NAME -> editNoteController.changeNoteName(message, chatStatus.getData());
             case CHANGE_NOTE_CONTENT -> editNoteController.changeNoteContent(message, chatStatus.getData());
+
+            case WEATHER_CITY -> weatherController.sendCityWeatherInfo(message, chatStatus.getData());
         }
     }
 }
