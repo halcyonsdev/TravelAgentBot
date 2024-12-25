@@ -1,4 +1,4 @@
-package com.halcyon.travelagent.controller;
+package com.halcyon.travelagent.controller.route;
 
 import com.halcyon.travelagent.api.geoapify.GeoapifyAPI;
 import com.halcyon.travelagent.bot.BotMessageHelper;
@@ -20,7 +20,6 @@ import org.telegram.telegrambots.meta.api.objects.InputFile;
 import org.telegram.telegrambots.meta.api.objects.message.Message;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 

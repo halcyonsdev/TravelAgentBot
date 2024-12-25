@@ -2,7 +2,18 @@ package com.halcyon.travelagent.bot;
 
 import com.halcyon.travelagent.caching.CacheManager;
 import com.halcyon.travelagent.caching.ChatStatus;
-import com.halcyon.travelagent.controller.*;
+import com.halcyon.travelagent.controller.command.CommandController;
+import com.halcyon.travelagent.controller.location.CreateLocationController;
+import com.halcyon.travelagent.controller.location.EditLocationController;
+import com.halcyon.travelagent.controller.note.CreateNoteController;
+import com.halcyon.travelagent.controller.note.EditNoteController;
+import com.halcyon.travelagent.controller.route.CreateRouteController;
+import com.halcyon.travelagent.controller.route.EditRouteController;
+import com.halcyon.travelagent.controller.ticket.RzdTicketController;
+import com.halcyon.travelagent.controller.ticket.TicketController;
+import com.halcyon.travelagent.controller.travel.CreateTravelController;
+import com.halcyon.travelagent.controller.travel.EditTravelController;
+import com.halcyon.travelagent.controller.weather.WeatherController;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -30,6 +41,9 @@ public class TravelAgentBot implements LongPollingSingleThreadUpdateConsumer {
     private final EditLocationController editLocationController;
     private final EditRouteController editRouteController;
     private final EditNoteController editNoteController;
+
+    private final TicketController ticketController;
+    private final RzdTicketController rzdTicketController;
 
     private final CacheManager cacheManager;
 
@@ -65,6 +79,9 @@ public class TravelAgentBot implements LongPollingSingleThreadUpdateConsumer {
             case "create_travel" -> createTravelController.enterTravelName(callbackQuery);
 
             case "get_weather" -> weatherController.enterWeatherCity(callbackQuery);
+
+            case "get_tickets" -> ticketController.sendTicketsMenuMessage(callbackQuery);
+            case "get_rzd" -> rzdTicketController.enterTicketStartCity(callbackQuery);
 
             case "back" -> commandController.handleBackCommand(callbackQuery);
 
@@ -149,10 +166,18 @@ public class TravelAgentBot implements LongPollingSingleThreadUpdateConsumer {
             editNoteController.enterNoteNewContent(callbackQuery, true);
         } else if (callbackData.startsWith("change_note_content_")) {
             editNoteController.enterNoteNewContent(callbackQuery, false);
-        } else if (callbackData.startsWith("go_back_")) {
-            weatherController.goInWeatherOrder(callbackQuery, callbackData.split("_")[2], Integer.parseInt(callbackData.split("_")[3]));
-        } else if (callbackData.startsWith("go_forward_")) {
-            weatherController.goInWeatherOrder(callbackQuery, callbackData.split("_")[2], Integer.parseInt(callbackData.split("_")[3]));
+        } else if (callbackData.startsWith("go_weather_back_")) {
+            weatherController.goInWeatherOrder(callbackQuery);
+        } else if (callbackData.startsWith("go_weather_forward_")) {
+            weatherController.goInWeatherOrder(callbackQuery);
+        } else if (callbackData.startsWith("choose_start_station_")) {
+            rzdTicketController.enterTicketDestinationCity(callbackQuery);
+        } else if (callbackData.startsWith("choose_dest_station_")) {
+            rzdTicketController.enterStartTripDate(callbackQuery);
+        } else if (callbackData.startsWith("go_rzd_back_")) {
+            rzdTicketController.goInTripsOrder(callbackQuery);
+        } else if (callbackData.startsWith("go_rzd_forward_")) {
+            rzdTicketController.goInTripsOrder(callbackQuery);
         }
     }
 
@@ -189,11 +214,15 @@ public class TravelAgentBot implements LongPollingSingleThreadUpdateConsumer {
 
                 createNoteController.enterNoteContent(message, travelId, messageId);
             }
-            case NOTE_CONTENT -> createNoteController.createNote(message, chatStatus.getData());
-            case CHANGE_NOTE_NAME -> editNoteController.changeNoteName(message, chatStatus.getData());
-            case CHANGE_NOTE_CONTENT -> editNoteController.changeNoteContent(message, chatStatus.getData());
+            case NOTE_CONTENT -> createNoteController.createNote(message, cachedData);
+            case CHANGE_NOTE_NAME -> editNoteController.changeNoteName(message, cachedData);
+            case CHANGE_NOTE_CONTENT -> editNoteController.changeNoteContent(message, cachedData);
 
-            case WEATHER_CITY -> weatherController.sendCityWeatherInfo(message, chatStatus.getData());
+            case WEATHER_CITY -> weatherController.sendCityWeatherInfo(message, cachedData);
+
+            case RZD_START_CITY -> rzdTicketController.chooseTicketStartStation(message, cachedData);
+            case RZD_DESTINATION_CITY -> rzdTicketController.chooseTicketDestinationStation(message, cachedData);
+            case RZD_START_DATE -> rzdTicketController.getRzdTickets(message, cachedData);
         }
     }
 }

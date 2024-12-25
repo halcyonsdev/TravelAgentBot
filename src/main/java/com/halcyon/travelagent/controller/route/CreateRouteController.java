@@ -1,4 +1,4 @@
-package com.halcyon.travelagent.controller;
+package com.halcyon.travelagent.controller.route;
 
 import com.halcyon.travelagent.api.geoapify.GeoapifyAPI;
 import com.halcyon.travelagent.bot.BotMessageHelper;

@@ -18,4 +18,8 @@ public class Credentials {
     public static String getOpenWeatherMapApiKey() {
         return dotenv.get("OPEN_WEATHER_MAP_API_KEY");
     }
+
+    public static String getYandexRaspApiKey() {
+        return dotenv.get("YANDEX_RASP_API_KEY");
+    }
 }

@@ -1,4 +1,4 @@
-package com.halcyon.travelagent.controller;
+package com.halcyon.travelagent.controller.travel;
 
 import com.halcyon.travelagent.bot.BotMessageHelper;
 import com.halcyon.travelagent.caching.CacheManager;

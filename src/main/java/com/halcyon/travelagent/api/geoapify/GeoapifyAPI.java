@@ -88,8 +88,8 @@ public class GeoapifyAPI {
     }
 
     public Optional<String> getNewRouteImageUrl(String startPointName, String destinationPointName) {
-        Optional<Coordinate> startCoordinatesOptional = getLocationCoordinate(startPointName);
-        Optional<Coordinate> destinationCoordinatesOptional = getLocationCoordinate(destinationPointName);
+        Optional<Coordinate> startCoordinatesOptional = getLocationCoordinate(getLocationCoordinateUrl(startPointName));
+        Optional<Coordinate> destinationCoordinatesOptional = getLocationCoordinate(getLocationCoordinateUrl(destinationPointName));
 
         if (startCoordinatesOptional.isEmpty() || destinationCoordinatesOptional.isEmpty()) {
             return Optional.empty();
@@ -112,7 +112,7 @@ public class GeoapifyAPI {
         return Optional.of(url);
     }
 
-    private Optional<Coordinate> getLocationCoordinate(String text) {
+    private String getLocationCoordinateUrl(String text) {
         String[] data = text.split(", улица ");
         String url = String.format("%s?text=%s&lang=ru&apiKey=%s", GEOCODE_URL, text, API_KEY);
 
@@ -120,6 +120,10 @@ public class GeoapifyAPI {
             url = String.format("%s?text=%s&street=%s&lang=ru&apiKey=%s", GEOCODE_URL, data[0], data[1], API_KEY);
         }
 
+        return url;
+    }
+
+    private Optional<Coordinate> getLocationCoordinate(String url) {
         Optional<JsonArray> features = getLocationFeatures(url);
 
         if (features.isEmpty()) {
@@ -211,7 +215,7 @@ public class GeoapifyAPI {
         int number = 1;
 
         if (routePointId == -1) {
-            Optional<Coordinate> newRouteCoordinateOptional = getLocationCoordinate(newPointName);
+            Optional<Coordinate> newRouteCoordinateOptional = getLocationCoordinate(getLocationCoordinateUrl(newPointName));
 
             if (newRouteCoordinateOptional.isEmpty()) {
                 return Optional.empty();
@@ -222,7 +226,7 @@ public class GeoapifyAPI {
         }
 
         while (currentPoint != null) {
-            Optional<Coordinate> coordinateOptional = getLocationCoordinate(currentPoint.getName());
+            Optional<Coordinate> coordinateOptional = getLocationCoordinate(getLocationCoordinateUrl(currentPoint.getName()));
 
             if (coordinateOptional.isEmpty()) {
                 return Optional.empty();
@@ -237,7 +241,7 @@ public class GeoapifyAPI {
             markers.append(getMarker(coordinateOptional.get(), number++)).append("|");
 
             if (currentPoint.getId() == routePointId) {
-                Optional<Coordinate> newRouteCoordinateOptional = getLocationCoordinate(newPointName);
+                Optional<Coordinate> newRouteCoordinateOptional = getLocationCoordinate(getLocationCoordinateUrl(newPointName));
 
                 if (newRouteCoordinateOptional.isEmpty()) {
                     return Optional.empty();
@@ -265,5 +269,10 @@ public class GeoapifyAPI {
         );
 
         return Optional.of(url);
+    }
+
+    public Optional<Coordinate> getRussianCityCoordinate(String city) {
+        String url = String.format("%s?city=%s&country=Россия&lang=ru&apiKey=%s", GEOCODE_URL, city, API_KEY);
+        return getLocationCoordinate(url);
     }
 }

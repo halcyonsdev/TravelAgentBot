@@ -1,4 +1,4 @@
-package com.halcyon.travelagent.controller;
+package com.halcyon.travelagent.controller.note;
 
 import com.halcyon.travelagent.bot.BotMessageHelper;
 import com.halcyon.travelagent.caching.CacheManager;
@@ -12,15 +12,12 @@ import com.halcyon.travelagent.service.TravelService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
-import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
 import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
 import org.telegram.telegrambots.meta.api.objects.PhotoSize;
 import org.telegram.telegrambots.meta.api.objects.message.Message;
 
 import java.util.List;
 import java.util.Optional;
-
-import static com.halcyon.travelagent.util.KeyboardUtils.generateTravelNotesKeyboardMarkup;
 
 @Controller
 @RequiredArgsConstructor

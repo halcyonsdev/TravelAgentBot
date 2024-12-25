@@ -1,4 +1,4 @@
-package com.halcyon.travelagent.controller;
+package com.halcyon.travelagent.controller.command;
 
 import com.halcyon.travelagent.bot.BotMessageHelper;
 import lombok.RequiredArgsConstructor;

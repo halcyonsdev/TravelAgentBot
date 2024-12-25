@@ -1,4 +1,4 @@
-package com.halcyon.travelagent.controller;
+package com.halcyon.travelagent.controller.weather;
 
 import com.halcyon.travelagent.api.openweathermap.OpenWeatherMapAPI;
 import com.halcyon.travelagent.bot.BotMessageHelper;
@@ -68,8 +68,12 @@ public class WeatherController {
         cacheManager.remove(String.valueOf(chatId));
     }
 
-    public void goInWeatherOrder(CallbackQuery callbackQuery, String city, int order) {
+    public void goInWeatherOrder(CallbackQuery callbackQuery) {
         long chatId = callbackQuery.getMessage().getChatId();
+        String[] callbackData = callbackQuery.getData().split("_");
+        String city = callbackData[3];
+        int order = Integer.parseInt(callbackData[4]);
+
         Optional<String> forecastsOptional = openWeatherMapAPI.getCityWeatherInfo(city, order);
 
         if (forecastsOptional.isEmpty()) {

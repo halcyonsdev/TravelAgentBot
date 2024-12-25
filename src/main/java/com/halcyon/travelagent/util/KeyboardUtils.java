@@ -1,5 +1,6 @@
 package com.halcyon.travelagent.util;
 
+import com.halcyon.travelagent.api.yandex.Station;
 import com.halcyon.travelagent.entity.*;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
@@ -23,6 +24,10 @@ public class KeyboardUtils {
                         new InlineKeyboardRow(InlineKeyboardButton.builder()
                                 .text("⛅️ Погода")
                                 .callbackData("get_weather")
+                                .build()),
+                        new InlineKeyboardRow(InlineKeyboardButton.builder()
+                                .text("\uD83C\uDFAB Билеты")
+                                .callbackData("get_tickets")
                                 .build())
                         )).build();
     }
@@ -381,14 +386,79 @@ public class KeyboardUtils {
         if (order - 3 >= 0) {
             currentRow.add(InlineKeyboardButton.builder()
                     .text("⬅️ Назад")
-                    .callbackData(String.format("go_back_%s_%s", city, order - 3))
+                    .callbackData(String.format("go_weather_back_%s_%s", city, order - 3))
                     .build());
         }
 
         if (order + 3 <= 39) {
             currentRow.add(InlineKeyboardButton.builder()
                     .text("➡️ Вперед")
-                    .callbackData(String.format("go_forward_%s_%s", city, order + 3))
+                    .callbackData(String.format("go_weather_forward_%s_%s", city, order + 3))
+                    .build());
+        }
+
+        keyboard.add(currentRow);
+
+        var returnButton = InlineKeyboardButton.builder()
+                .text("↩️ Вернуться")
+                .callbackData("back")
+                .build();
+
+        keyboard.add(new InlineKeyboardRow(returnButton));
+
+        return new InlineKeyboardMarkup(keyboard);
+    }
+
+    public static InlineKeyboardMarkup generateChoiceOfTicketsKeyboardMarkup() {
+        return InlineKeyboardMarkup.builder()
+                .keyboard(List.of(
+                        new InlineKeyboardRow(InlineKeyboardButton.builder()
+                                .text("\uD83D\uDE89 РЖД")
+                                .callbackData("get_rzd")
+                                .build())
+                )).build();
+    }
+
+    public static InlineKeyboardMarkup generateChoiceOfStations(List<Station> stations, boolean isStart) {
+        List<InlineKeyboardRow> keyboard = new ArrayList<>();
+        InlineKeyboardRow currentRow = new InlineKeyboardRow();
+
+        for (Station station : stations) {
+            String callbackData = String.format("choose_%s_station_%s", (isStart ? "start" : "dest"), station.getCode());
+
+            currentRow.add(InlineKeyboardButton.builder()
+                    .text(station.getTitle())
+                    .callbackData(callbackData)
+                    .build());
+
+            if (currentRow.size() == NUMBER_OF_BUTTONS_IN_ROW) {
+                keyboard.add(currentRow);
+                currentRow = new InlineKeyboardRow();
+            }
+        }
+
+        if (!currentRow.isEmpty()) {
+            keyboard.add(currentRow);
+        }
+
+        return new InlineKeyboardMarkup(keyboard);
+    }
+
+    public static InlineKeyboardMarkup generateRzdTripsInfoKeyboardMarkup(String startStationCode, String destinationStationCode, String date, int order) {
+        List<InlineKeyboardRow> keyboard = new ArrayList<>();
+        InlineKeyboardRow currentRow = new InlineKeyboardRow();
+
+        if (order - 3 >= 0) {
+            currentRow.add(InlineKeyboardButton.builder()
+                    .text("⬅️ Назад")
+                    .callbackData(String.format("go_rzd_back_%s_%s_%s_%s", startStationCode, destinationStationCode, date, order - 3))
+                    .build());
+        }
+
+        if (order + 3 <= 10) {
+            currentRow.add(InlineKeyboardButton.builder()
+                    .text("➡️ Вперед")
+                    .callbackData(String.format("go_rzd_forward_%s_%s_%s_%s", startStationCode, destinationStationCode, date, order + 3))
                     .build());
         }
 
