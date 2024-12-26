@@ -9,6 +9,7 @@ import com.halcyon.travelagent.controller.note.CreateNoteController;
 import com.halcyon.travelagent.controller.note.EditNoteController;
 import com.halcyon.travelagent.controller.route.CreateRouteController;
 import com.halcyon.travelagent.controller.route.EditRouteController;
+import com.halcyon.travelagent.controller.ticket.HotelTicketController;
 import com.halcyon.travelagent.controller.ticket.RzdTicketController;
 import com.halcyon.travelagent.controller.ticket.TicketController;
 import com.halcyon.travelagent.controller.travel.CreateTravelController;
@@ -44,6 +45,7 @@ public class TravelAgentBot implements LongPollingSingleThreadUpdateConsumer {
 
     private final TicketController ticketController;
     private final RzdTicketController rzdTicketController;
+    private final HotelTicketController hotelTicketController;
 
     private final CacheManager cacheManager;
 
@@ -82,6 +84,7 @@ public class TravelAgentBot implements LongPollingSingleThreadUpdateConsumer {
 
             case "get_tickets" -> ticketController.sendTicketsMenuMessage(callbackQuery);
             case "get_rzd" -> rzdTicketController.enterTicketStartCity(callbackQuery);
+            case "get_hotels" -> hotelTicketController.enterHotelCity(callbackQuery);
 
             case "back" -> commandController.handleBackCommand(callbackQuery);
 
@@ -178,6 +181,8 @@ public class TravelAgentBot implements LongPollingSingleThreadUpdateConsumer {
             rzdTicketController.goInTripsOrder(callbackQuery);
         } else if (callbackData.startsWith("go_rzd_forward_")) {
             rzdTicketController.goInTripsOrder(callbackQuery);
+        } else if (callbackData.startsWith("go_hotel_order")) {
+            hotelTicketController.goInHotelOrder(callbackQuery);
         }
     }
 
@@ -223,6 +228,10 @@ public class TravelAgentBot implements LongPollingSingleThreadUpdateConsumer {
             case RZD_START_CITY -> rzdTicketController.chooseTicketStartStation(message, cachedData);
             case RZD_DESTINATION_CITY -> rzdTicketController.chooseTicketDestinationStation(message, cachedData);
             case RZD_START_DATE -> rzdTicketController.getRzdTickets(message, cachedData);
+
+            case HOTEL_CITY -> hotelTicketController.enterCheckInDate(message, cachedData);
+            case HOTEL_CHECK_IN -> hotelTicketController.enterCheckOutDate(message, cachedData);
+            case HOTEL_CHECK_OUT -> hotelTicketController.findHotels(message, cachedData);
         }
     }
 }

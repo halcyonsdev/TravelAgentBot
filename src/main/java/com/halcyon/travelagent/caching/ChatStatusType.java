@@ -25,5 +25,8 @@ public enum ChatStatusType {
     WEATHER_CITY,
     RZD_START_CITY,
     RZD_DESTINATION_CITY,
-    RZD_START_DATE
+    RZD_START_DATE,
+    HOTEL_CITY,
+    HOTEL_CHECK_IN,
+    HOTEL_CHECK_OUT
 }

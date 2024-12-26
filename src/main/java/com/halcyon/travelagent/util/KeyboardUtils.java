@@ -11,7 +11,9 @@ import java.util.List;
 
 public class KeyboardUtils {
     private static final int NUMBER_OF_BUTTONS_IN_ROW = 3;
-
+    private static final String BACK_BUTTON_TEXT = "⬅️ Назад";
+    private static final String FORWARD_BUTTON_TEXT = "➡️ Вперед";
+    
     private KeyboardUtils() {}
 
     public static InlineKeyboardMarkup generateStartInlineKeyboard() {
@@ -67,14 +69,14 @@ public class KeyboardUtils {
 
     public static InlineKeyboardButton getBackButton() {
         return InlineKeyboardButton.builder()
-                .text("⬅️ Назад")
+                .text(BACK_BUTTON_TEXT)
                 .callbackData("back")
                 .build();
     }
 
     public static InlineKeyboardButton getBackWithDeleteButton(int messageId) {
         return InlineKeyboardButton.builder()
-                .text("⬅️ Назад")
+                .text(BACK_BUTTON_TEXT)
                 .callbackData("back_" + messageId)
                 .build();
     }
@@ -385,14 +387,14 @@ public class KeyboardUtils {
 
         if (order - 3 >= 0) {
             currentRow.add(InlineKeyboardButton.builder()
-                    .text("⬅️ Назад")
+                    .text(BACK_BUTTON_TEXT)
                     .callbackData(String.format("go_weather_back_%s_%s", city, order - 3))
                     .build());
         }
 
         if (order + 3 <= 39) {
             currentRow.add(InlineKeyboardButton.builder()
-                    .text("➡️ Вперед")
+                    .text(FORWARD_BUTTON_TEXT)
                     .callbackData(String.format("go_weather_forward_%s_%s", city, order + 3))
                     .build());
         }
@@ -415,6 +417,10 @@ public class KeyboardUtils {
                         new InlineKeyboardRow(InlineKeyboardButton.builder()
                                 .text("\uD83D\uDE89 РЖД")
                                 .callbackData("get_rzd")
+                                .build()),
+                        new InlineKeyboardRow(InlineKeyboardButton.builder()
+                                .text("\uD83C\uDFE8 Отели")
+                                .callbackData("get_hotels")
                                 .build())
                 )).build();
     }
@@ -450,14 +456,14 @@ public class KeyboardUtils {
 
         if (order - 3 >= 0) {
             currentRow.add(InlineKeyboardButton.builder()
-                    .text("⬅️ Назад")
+                    .text(BACK_BUTTON_TEXT)
                     .callbackData(String.format("go_rzd_back_%s_%s_%s_%s", startStationCode, destinationStationCode, date, order - 3))
                     .build());
         }
 
         if (order + 3 <= 10) {
             currentRow.add(InlineKeyboardButton.builder()
-                    .text("➡️ Вперед")
+                    .text(FORWARD_BUTTON_TEXT)
                     .callbackData(String.format("go_rzd_forward_%s_%s_%s_%s", startStationCode, destinationStationCode, date, order + 3))
                     .build());
         }
@@ -473,4 +479,35 @@ public class KeyboardUtils {
 
         return new InlineKeyboardMarkup(keyboard);
     }
+
+    public static InlineKeyboardMarkup generateHotelsInlineKeyboardMarkup(String city, String checkIn, String checkOut, int order) {
+        List<InlineKeyboardRow> keyboard = new ArrayList<>();
+        InlineKeyboardRow currentRow = new InlineKeyboardRow();
+
+        if (order - 3 >= 0) {
+            currentRow.add(InlineKeyboardButton.builder()
+                    .text(BACK_BUTTON_TEXT)
+                    .callbackData(String.format("go_hotel_order_%s_%s_%s_%s", city, checkIn, checkOut, order - 3))
+                    .build());
+        }
+
+        if (order + 3 <= 9) {
+            currentRow.add(InlineKeyboardButton.builder()
+                    .text(FORWARD_BUTTON_TEXT)
+                    .callbackData(String.format("go_hotel_order_%s_%s_%s_%s", city, checkIn, checkOut, order + 3))
+                    .build());
+        }
+
+        keyboard.add(currentRow);
+
+        var returnButton = InlineKeyboardButton.builder()
+                .text("↩️ Вернуться")
+                .callbackData("back")
+                .build();
+
+        keyboard.add(new InlineKeyboardRow(returnButton));
+
+        return new InlineKeyboardMarkup(keyboard);
+    }
+
 }
