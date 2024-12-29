@@ -38,7 +38,7 @@ public class YandexAPI {
 
     private Optional<List<Station>> sendGetNearestStationsRequest(String latitude, String longitude) {
         String nearestStationsUrl = String.format(
-                "%s?format=json&lat=%s&lng=%s&distance=50&station_types=train_station&lang=ru_RU&apikey=%s",
+                "%s?format=json&lat=%s&lng=%s&distance=50&station_types=train_station, station&lang=ru_RU&apikey=%s",
                 NEAREST_STATIONS_URL, latitude, longitude, API_KEY
         );
 

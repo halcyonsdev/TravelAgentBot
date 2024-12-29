@@ -14,8 +14,6 @@ import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
 import org.telegram.telegrambots.meta.api.objects.message.Message;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.List;
@@ -31,7 +29,7 @@ public class RzdTicketController {
     private final CacheManager cacheManager;
     private final YandexAPI yandexAPI;
 
-    private static String DATE_PATTERN = "yyyy-MM-dd";
+    private static final String DATE_PATTERN = "yyyy-MM-dd";
 
     public void enterTicketStartCity(CallbackQuery callbackQuery) {
         long chatId = callbackQuery.getMessage().getChatId();
@@ -62,29 +60,39 @@ public class RzdTicketController {
         botMessageHelper.deleteMessage(chatId, toDeleteMessageId);
         botMessageHelper.deleteMessage(chatId, message.getMessageId());
 
-        var nearestStationsOptional = yandexAPI.getNearestStations(message.getText());
+        var nearestStationsOptional = getNearestStations(chatId, message.getText());
 
         if (nearestStationsOptional.isEmpty()) {
-            botMessageHelper.sendErrorMessage(chatId);
-            return;
-        }
-
-        List<Station> nearestStations = nearestStationsOptional.get();
-
-        if (nearestStations.isEmpty()) {
-            sendInvalidCityMessage(chatId);
             return;
         }
 
         var chooseStartStationMessage = SendMessage.builder()
                 .chatId(chatId)
                 .text("*Выберите станцию, откуда вам нужен билет:*")
-                .replyMarkup(generateChoiceOfStations(nearestStations, true))
+                .replyMarkup(generateChoiceOfStations(nearestStationsOptional.get(), true))
                 .build();
         chooseStartStationMessage.enableMarkdown(true);
 
         botMessageHelper.sendMessage(chooseStartStationMessage);
         cacheManager.remove(String.valueOf(chatId));
+    }
+
+    private Optional<List<Station>> getNearestStations(long chatId, String city) {
+        var nearestStationsOptional = yandexAPI.getNearestStations(city);
+
+        if (nearestStationsOptional.isEmpty()) {
+            botMessageHelper.sendErrorMessage(chatId);
+            return Optional.empty();
+        }
+
+        List<Station> nearestStations = nearestStationsOptional.get();
+
+        if (nearestStations.isEmpty()) {
+            sendInvalidCityMessage(chatId);
+            return Optional.empty();
+        }
+
+        return nearestStationsOptional;
     }
 
     private void sendInvalidCityMessage(long chatId) {
@@ -125,24 +133,16 @@ public class RzdTicketController {
         botMessageHelper.deleteMessage(chatId, toDeleteMessageId);
         botMessageHelper.deleteMessage(chatId, message.getMessageId());
 
-        var nearestStationsOptional = yandexAPI.getNearestStations(message.getText());
+        var nearestStationsOptional = getNearestStations(chatId, message.getText());
 
         if (nearestStationsOptional.isEmpty()) {
-            botMessageHelper.sendErrorMessage(chatId);
-            return;
-        }
-
-        List<Station> nearestStations = nearestStationsOptional.get();
-
-        if (nearestStations.isEmpty()) {
-            sendInvalidCityMessage(chatId);
             return;
         }
 
         var chooseDestinationStationMessage = SendMessage.builder()
                 .chatId(chatId)
                 .text("*Выберите станцию, куда вам нужен билет:*")
-                .replyMarkup(generateChoiceOfStations(nearestStations, false))
+                .replyMarkup(generateChoiceOfStations(nearestStationsOptional.get(), false))
                 .build();
         chooseDestinationStationMessage.enableMarkdown(true);
 
