@@ -9,6 +9,7 @@ import com.halcyon.travelagent.controller.note.CreateNoteController;
 import com.halcyon.travelagent.controller.note.EditNoteController;
 import com.halcyon.travelagent.controller.route.CreateRouteController;
 import com.halcyon.travelagent.controller.route.EditRouteController;
+import com.halcyon.travelagent.controller.sight.SightController;
 import com.halcyon.travelagent.controller.ticket.HotelTicketController;
 import com.halcyon.travelagent.controller.ticket.RzdTicketController;
 import com.halcyon.travelagent.controller.ticket.TicketController;
@@ -46,6 +47,8 @@ public class TravelAgentBot implements LongPollingSingleThreadUpdateConsumer {
     private final TicketController ticketController;
     private final RzdTicketController rzdTicketController;
     private final HotelTicketController hotelTicketController;
+
+    private final SightController sightController;
 
     private final CacheManager cacheManager;
 
@@ -85,6 +88,8 @@ public class TravelAgentBot implements LongPollingSingleThreadUpdateConsumer {
             case "get_tickets" -> ticketController.sendTicketsMenuMessage(callbackQuery);
             case "get_rzd" -> rzdTicketController.enterTicketStartCity(callbackQuery);
             case "get_hotels" -> hotelTicketController.enterHotelCity(callbackQuery);
+
+            case "get_sights" -> sightController.enterSightCity(callbackQuery);
 
             case "back" -> commandController.handleBackCommand(callbackQuery);
 
@@ -183,6 +188,10 @@ public class TravelAgentBot implements LongPollingSingleThreadUpdateConsumer {
             rzdTicketController.goInTripsOrder(callbackQuery);
         } else if (callbackData.startsWith("go_hotel_order")) {
             hotelTicketController.goInHotelOrder(callbackQuery);
+        } else if (callbackData.startsWith("go_sight_order")) {
+            sightController.goInSightOrder(callbackQuery);
+        } else if (callbackData.startsWith("sight_coordinate_")) {
+            sightController.sendSightLocation(callbackQuery);
         }
     }
 
@@ -232,6 +241,8 @@ public class TravelAgentBot implements LongPollingSingleThreadUpdateConsumer {
             case HOTEL_CITY -> hotelTicketController.enterCheckInDate(message, cachedData);
             case HOTEL_CHECK_IN -> hotelTicketController.enterCheckOutDate(message, cachedData);
             case HOTEL_CHECK_OUT -> hotelTicketController.findHotels(message, cachedData);
+
+            case SIGHT_CITY -> sightController.getSights(message, cachedData);
         }
     }
 }

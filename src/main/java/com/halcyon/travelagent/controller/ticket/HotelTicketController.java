@@ -7,7 +7,6 @@ import com.halcyon.travelagent.caching.ChatStatus;
 import com.halcyon.travelagent.caching.ChatStatusType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
-import org.telegram.telegrambots.meta.api.methods.send.SendLocation;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
 import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
@@ -18,7 +17,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.List;
 
-import static com.halcyon.travelagent.util.KeyboardUtils.generateHotelsInlineKeyboardMarkup;
+import static com.halcyon.travelagent.util.KeyboardUtils.generateHotelsInfoKeyboardMarkup;
 
 @Controller
 @RequiredArgsConstructor
@@ -148,7 +147,7 @@ public class HotelTicketController {
             var hotelsInfoMessage = SendMessage.builder()
                     .chatId(chatId)
                     .text(hotelsInfoOptional.get())
-                    .replyMarkup(generateHotelsInlineKeyboardMarkup(city, checkIn, checkOut, 0))
+                    .replyMarkup(generateHotelsInfoKeyboardMarkup(city, checkIn, checkOut, 0))
                     .build();
             hotelsInfoMessage.enableMarkdown(true);
 
@@ -180,7 +179,7 @@ public class HotelTicketController {
                 .chatId(chatId)
                 .messageId(callbackQuery.getMessage().getMessageId())
                 .text(hotelsInfoOptional.get())
-                .replyMarkup(generateHotelsInlineKeyboardMarkup(city, checkIn, checkOut, order))
+                .replyMarkup(generateHotelsInfoKeyboardMarkup(city, checkIn, checkOut, order))
                 .build();
         hotelsInfoMessage.enableMarkdown(true);
 

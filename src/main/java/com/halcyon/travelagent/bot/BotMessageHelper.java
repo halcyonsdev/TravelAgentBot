@@ -95,6 +95,14 @@ public class BotMessageHelper {
         return null;
     }
 
+    public void sendLocation(SendLocation sendLocation) {
+        try {
+            telegramClient.execute(sendLocation);
+        } catch (TelegramApiException e) {
+            log.error("Failed to send location.");
+        }
+    }
+
     public String getTravelInfoText(Travel travel) {
         return String.format("""
                         *🌍️ Название:* %s

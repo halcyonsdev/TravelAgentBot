@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import static com.halcyon.travelagent.config.Credentials.getYandexGeocodeApiKey;
 import static com.halcyon.travelagent.config.Credentials.getYandexRaspApiKey;
 
 @Component
@@ -22,9 +23,11 @@ public class YandexAPI {
     private final RestTemplate restTemplate;
     private final GeoapifyAPI geoapifyAPI;
 
-    private static final String API_KEY = getYandexRaspApiKey();
+    private static final String RASP_API_KEY = getYandexRaspApiKey();
+    private static final String GEOCODE_API_KEY = getYandexGeocodeApiKey();
     private static final String NEAREST_STATIONS_URL = "https://api.rasp.yandex.net/v3.0/nearest_stations";
     private static final String SEARCH_URL = "https://api.rasp.yandex.net/v3.0/search";
+    private static final String GEOCODE_MAPS_URL = "https://geocode-maps.yandex.ru/1.x";
 
     public Optional<List<Station>> getNearestStations(String city) {
         Optional<Coordinate> cityCoordinateOptional = geoapifyAPI.getRussianCityCoordinate(city);
@@ -39,7 +42,7 @@ public class YandexAPI {
     private Optional<List<Station>> sendGetNearestStationsRequest(String latitude, String longitude) {
         String nearestStationsUrl = String.format(
                 "%s?format=json&lat=%s&lng=%s&distance=50&station_types=train_station, station&lang=ru_RU&apikey=%s",
-                NEAREST_STATIONS_URL, latitude, longitude, API_KEY
+                NEAREST_STATIONS_URL, latitude, longitude, RASP_API_KEY
         );
 
         String jsonResponse = restTemplate.getForObject(nearestStationsUrl, String.class);
@@ -64,7 +67,7 @@ public class YandexAPI {
     public Optional<String> getTrips(String startStationCode, String destinationStationCode, String date, int order) {
         String searchTripsUrl = String.format(
                 "%s?from=%s&to=%s&date=%s&apikey=%s&format=json&lang=ru_RU&page=1&limit=10",
-                SEARCH_URL, startStationCode, destinationStationCode, date, API_KEY
+                SEARCH_URL, startStationCode, destinationStationCode, date, RASP_API_KEY
         );
 
         String jsonResponse;
@@ -111,5 +114,40 @@ public class YandexAPI {
         }
 
         return Optional.of(trips.toString());
+    }
+
+    public Optional<CityArea> getCityArea(String city) {
+        String url = String.format(
+                "%s?geocode=%s&format=json&apikey=%s",
+                GEOCODE_MAPS_URL, city, GEOCODE_API_KEY
+        );
+
+        String jsonResponse = restTemplate.getForObject(url, String.class);
+
+        if (jsonResponse == null) {
+            return Optional.empty();
+        }
+
+        JsonArray locations = JsonParser.parseString(jsonResponse).getAsJsonObject()
+                .get("response").getAsJsonObject()
+                .get("GeoObjectCollection").getAsJsonObject()
+                .get("featureMember").getAsJsonArray();
+
+        if (locations.isEmpty()) {
+            return Optional.empty();
+        }
+
+        JsonObject coordinates = locations
+                .get(0).getAsJsonObject()
+                .get("GeoObject").getAsJsonObject()
+                .get("boundedBy").getAsJsonObject()
+                .get("Envelope").getAsJsonObject();
+
+        String[] minCoordinates = coordinates.get("lowerCorner").getAsString().split(" ");
+        String[] maxCoordinates = coordinates.get("upperCorner").getAsString().split(" ");
+
+        CityArea cityArea = new CityArea(city, minCoordinates[0], minCoordinates[1], maxCoordinates[0], maxCoordinates[1]);
+
+        return Optional.of(cityArea);
     }
 }

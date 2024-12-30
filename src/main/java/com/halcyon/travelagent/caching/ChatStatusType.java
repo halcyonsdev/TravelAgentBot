@@ -28,5 +28,6 @@ public enum ChatStatusType {
     RZD_START_DATE,
     HOTEL_CITY,
     HOTEL_CHECK_IN,
-    HOTEL_CHECK_OUT
+    HOTEL_CHECK_OUT,
+    SIGHT_CITY
 }

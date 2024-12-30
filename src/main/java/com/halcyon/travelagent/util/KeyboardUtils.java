@@ -1,5 +1,6 @@
 package com.halcyon.travelagent.util;
 
+import com.halcyon.travelagent.api.sightsafari.SightInfo;
 import com.halcyon.travelagent.api.yandex.Station;
 import com.halcyon.travelagent.entity.*;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
@@ -22,6 +23,10 @@ public class KeyboardUtils {
                         new InlineKeyboardRow(InlineKeyboardButton.builder()
                                 .text("✈️ Мои путешествия")
                                 .callbackData("get_travels")
+                                .build()),
+                        new InlineKeyboardRow(InlineKeyboardButton.builder()
+                                .text("\uD83C\uDFD9 Достопримечательности")
+                                .callbackData("get_sights")
                                 .build()),
                         new InlineKeyboardRow(InlineKeyboardButton.builder()
                                 .text("⛅️ Погода")
@@ -480,7 +485,7 @@ public class KeyboardUtils {
         return new InlineKeyboardMarkup(keyboard);
     }
 
-    public static InlineKeyboardMarkup generateHotelsInlineKeyboardMarkup(String city, String checkIn, String checkOut, int order) {
+    public static InlineKeyboardMarkup generateHotelsInfoKeyboardMarkup(String city, String checkIn, String checkOut, int order) {
         List<InlineKeyboardRow> keyboard = new ArrayList<>();
         InlineKeyboardRow currentRow = new InlineKeyboardRow();
 
@@ -510,4 +515,58 @@ public class KeyboardUtils {
         return new InlineKeyboardMarkup(keyboard);
     }
 
+    public static InlineKeyboardMarkup generateSightsInfoKeyboardMarkup(List<SightInfo> sights, String city, int order) {
+        List<InlineKeyboardRow> keyboard = new ArrayList<>();
+        InlineKeyboardRow currentRow = new InlineKeyboardRow();
+
+        int number = order;
+        for (SightInfo sightInfo : sights) {
+            String callbackData = String.format(
+                    "sight_coordinate_%s_%s_%s_%s",
+                    city, order,
+                    sightInfo.getCoordinate().getLatitude(),
+                    sightInfo.getCoordinate().getLongitude()
+            );
+
+            currentRow.add(InlineKeyboardButton.builder()
+                    .callbackData(callbackData)
+                    .text(String.valueOf(++number))
+                    .build());
+
+            if (currentRow.size() == NUMBER_OF_BUTTONS_IN_ROW) {
+                keyboard.add(currentRow);
+                currentRow = new InlineKeyboardRow();
+            }
+        }
+
+        if (!currentRow.isEmpty()) {
+            keyboard.add(currentRow);
+            currentRow = new InlineKeyboardRow();
+        }
+
+        if (order - 5 >= 0) {
+            currentRow.add(InlineKeyboardButton.builder()
+                    .text(BACK_BUTTON_TEXT)
+                    .callbackData(String.format("go_sight_order_%s_%s", city, order - 5))
+                    .build());
+        }
+
+        if (order + 5 <= 300) {
+            currentRow.add(InlineKeyboardButton.builder()
+                    .text(FORWARD_BUTTON_TEXT)
+                    .callbackData(String.format("go_sight_order_%s_%s", city, order + 5))
+                    .build());
+        }
+
+        keyboard.add(currentRow);
+
+        var returnButton = InlineKeyboardButton.builder()
+                .text("↩️ Вернуться")
+                .callbackData("back")
+                .build();
+
+        keyboard.add(new InlineKeyboardRow(returnButton));
+
+        return new InlineKeyboardMarkup(keyboard);
+    }
 }

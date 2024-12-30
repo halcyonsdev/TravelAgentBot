@@ -22,4 +22,8 @@ public class Credentials {
     public static String getYandexRaspApiKey() {
         return dotenv.get("YANDEX_RASP_API_KEY");
     }
+
+    public static String getYandexGeocodeApiKey() {
+        return dotenv.get("YANDEX_GEOCODE_API_KEY");
+    }
 }
